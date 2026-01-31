@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
 
 | Name | Type | Default | Nullable | Extra Definition | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | ---------------- | -------- | ------- | ------- |
-| id | serial |  | false | PRIMARY KEY | [runs](runs.md), [messages](messages.md) |  | Workspace ID |
+| id | serial |  | false | PRIMARY KEY | [threads](threads.md) |  | Workspace ID |
 | name | text |  | false |  |  |  | Workspace name |
 | created_at | timestamptz | now() | false | DEFAULT |  |  | Created at |
 
@@ -40,27 +40,17 @@ CREATE TABLE IF NOT EXISTS workspaces (
 ```mermaid
 erDiagram
 
-"workspaces" ||--o{ "runs" : "FOREIGN KEY (workspace_id) REFERENCES workspaces (id)"
-"workspaces" ||--o{ "messages" : "FOREIGN KEY (workspace_id) REFERENCES workspaces (id)"
+"workspaces" ||--o{ "threads" : "FOREIGN KEY (workspace_id) REFERENCES workspaces (id)"
 
 "workspaces" {
   serial id PK "Workspace ID"
   text name "Workspace name"
   timestamptz created_at "Created at"
 }
-"runs" {
-  serial id PK "Run ID"
+"threads" {
+  serial id PK "Thread ID"
   int workspace_id FK "Workspace ID"
-  text status "Run status"
-  timestamptz created_at "Created at"
-  timestamptz updated_at "Updated at"
-}
-"messages" {
-  serial id PK "Message ID"
-  int workspace_id FK "Workspace ID"
-  int run_id FK "Run ID"
-  text role "user / assistant"
-  text content "Message content"
+  text title "Thread title"
   timestamptz created_at "Created at"
 }
 ```

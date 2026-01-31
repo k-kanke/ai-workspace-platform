@@ -8,7 +8,7 @@
 ```sql
 CREATE TABLE IF NOT EXISTS messages (
   id SERIAL PRIMARY KEY,
-  workspace_id INTEGER NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
   run_id INTEGER REFERENCES runs(id) ON DELETE SET NULL,
   role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
   content TEXT NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS messages (
 | Name | Type | Default | Nullable | Extra Definition | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | ---------------- | -------- | ------- | ------- |
 | id | serial |  | false | PRIMARY KEY |  |  | Message ID |
-| workspace_id | integer |  | false |  |  | [workspaces](workspaces.md) | Workspace ID |
+| thread_id | integer |  | false |  |  | [threads](threads.md) | Thread ID |
 | run_id | integer |  | true |  |  | [runs](runs.md) | Run ID (nullable) |
 | role | text |  | false | CHECK (user/assistant) |  |  | Message role |
 | content | text |  | false |  |  |  | Message content |
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS messages (
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
 | messages_pkey | PRIMARY KEY | PRIMARY KEY (id) |
-| messages_workspace_id_fkey | FOREIGN KEY | FOREIGN KEY (workspace_id) REFERENCES workspaces (id) ON DELETE CASCADE |
+| messages_thread_id_fkey | FOREIGN KEY | FOREIGN KEY (thread_id) REFERENCES threads (id) ON DELETE CASCADE |
 | messages_run_id_fkey | FOREIGN KEY | FOREIGN KEY (run_id) REFERENCES runs (id) ON DELETE SET NULL |
 | messages_role_check | CHECK | CHECK (role IN ('user','assistant')) |
 
@@ -43,32 +43,33 @@ CREATE TABLE IF NOT EXISTS messages (
 | Name | Definition |
 | ---- | ---------- |
 | messages_pkey | PRIMARY KEY (id) |
-| idx_messages_workspace_id | INDEX | INDEX (workspace_id) |
+| idx_messages_thread_id | INDEX | INDEX (thread_id) |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"workspaces" ||--o{ "messages" : "FOREIGN KEY (workspace_id) REFERENCES workspaces (id)"
+"threads" ||--o{ "messages" : "FOREIGN KEY (thread_id) REFERENCES threads (id)"
 "runs" ||--o{ "messages" : "FOREIGN KEY (run_id) REFERENCES runs (id)"
 
 "messages" {
   serial id PK "Message ID"
-  int workspace_id FK "Workspace ID"
+  int thread_id FK "Thread ID"
   int run_id FK "Run ID"
   text role "user / assistant"
   text content "Message content"
   timestamptz created_at "Created at"
 }
-"workspaces" {
-  serial id PK "Workspace ID"
-  text name "Workspace name"
+"threads" {
+  serial id PK "Thread ID"
+  int workspace_id FK "Workspace ID"
+  text title "Thread title"
   timestamptz created_at "Created at"
 }
 "runs" {
   serial id PK "Run ID"
-  int workspace_id FK "Workspace ID"
+  int thread_id FK "Thread ID"
   text status "Run status"
   timestamptz created_at "Created at"
   timestamptz updated_at "Updated at"
