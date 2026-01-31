@@ -1,16 +1,18 @@
 package usecase
 
 import (
-    "context"
-    "errors"
-    "strconv"
+	"context"
+	"errors"
+	"strconv"
 
-    "ai-workspace-platform/api/internal/domain"
-    repopg "ai-workspace-platform/api/internal/infra/repo"
-    "github.com/jackc/pgx/v5/pgxpool"
+	"ai-workspace-platform/api/internal/domain"
+	repopg "ai-workspace-platform/api/internal/infra/repo"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Usecase struct {
+    Workspace domain.WorkspaceRepository
     Threads  domain.ThreadRepository
     Messages domain.MessageRepository
     Runs     domain.RunRepository
@@ -18,10 +20,15 @@ type Usecase struct {
 
 func New(db *pgxpool.Pool) *Usecase {
     return &Usecase{
+        Workspace: repopg.NewWorkspaceRepoPG(db),
         Threads:  repopg.NewThreadRepoPG(db),
         Messages: repopg.NewMessageRepoPG(db),
         Runs:     repopg.NewRunRepoPG(db),
     }
+}
+
+func (u *Usecase) CreateWorkspace(ctx context.Context, name *string) (*domain.Workspace, error) {
+    return u.Workspace.Create(ctx, name)
 }
 
 func (u *Usecase) CreateThread(ctx context.Context, workspaceID int64, title *string) (*domain.Thread, error) {

@@ -2,6 +2,11 @@ package domain
 
 import "context"
 
+type WorkspaceRepository interface {
+    Create(ctx context.Context, name *string) (*Workspace, error)
+    Get(ctx context.Context, id int64) (*Workspace, error)
+}
+
 type ThreadRepository interface {
     Create(ctx context.Context, workspaceID int64, title *string) (*Thread, error)
     Get(ctx context.Context, id int64) (*Thread, error)
@@ -16,4 +21,3 @@ type RunRepository interface {
     Create(ctx context.Context, threadID int64, status RunStatus) (*Run, error)
     Get(ctx context.Context, id int64) (*Run, error)
 }
-
