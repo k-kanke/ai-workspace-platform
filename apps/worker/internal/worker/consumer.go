@@ -18,10 +18,15 @@ type runMessage struct {
     ThreadID int64 `json:"thread_id"`
 }
 
-func Consume(ctx context.Context, q *queue.SQSClient) error {
+type Runner interface {
+    ProcessRun(ctx context.Context, runID, threadID int64) error
+}
+
+func Consume(ctx context.Context, q *queue.SQSClient, r Runner) error {
     if q == nil || q.Client == nil || q.QueueURL == "" {
         return ErrInvalidQueueClient
     }
+    if r == nil { return ErrNoRunner }
 
     client := q.Client
     queueURL := q.QueueURL
@@ -73,7 +78,10 @@ func Consume(ctx context.Context, q *queue.SQSClient) error {
                 continue
             }
 
-            log.Printf("received run: run_id=%d thread_id=%d", body.RunID, body.ThreadID)
+            if err := r.ProcessRun(ctx, body.RunID, body.ThreadID); err != nil {
+                log.Printf("process run error: %v", err)
+                continue
+            }
 
             _, err := client.DeleteMessage(ctx, &sqs.DeleteMessageInput{
                 QueueUrl:      aws.String(queueURL),
@@ -87,7 +95,12 @@ func Consume(ctx context.Context, q *queue.SQSClient) error {
 }
 
 var ErrInvalidQueueClient = &invalidQueueClientError{}
+var ErrNoRunner = &noRunnerError{}
 
 type invalidQueueClientError struct{}
 
 func (e *invalidQueueClientError) Error() string { return "invalid SQS client or queue URL" }
+
+type noRunnerError struct{}
+
+func (e *noRunnerError) Error() string { return "runner is nil" }
