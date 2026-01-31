@@ -9,10 +9,13 @@ import (
 )
 
 type RunProcessor struct {
-    Runs *repo.RunRepoPG
+    Runs     *repo.RunRepoPG
+    Messages *repo.MessageRepoPG
 }
 
-func NewRunProcessor(r *repo.RunRepoPG) *RunProcessor { return &RunProcessor{Runs: r} }
+func NewRunProcessor(r *repo.RunRepoPG, m *repo.MessageRepoPG) *RunProcessor {
+    return &RunProcessor{Runs: r, Messages: m}
+}
 
 func (p *RunProcessor) ProcessRun(ctx context.Context, runID, threadID int64) error {
     ok, err := p.Runs.UpdateStatusCAS(ctx, runID, threadID, repo.RunQueued, repo.RunRunning)
@@ -29,7 +32,12 @@ func (p *RunProcessor) ProcessRun(ctx context.Context, runID, threadID int64) er
 
     _, err = p.Runs.UpdateStatusCAS(ctx, runID, threadID, repo.RunRunning, repo.RunSucceeded)
     if err != nil { return err }
+    // 簡易なアシスタント返信を保存（定型文）
+    if p.Messages != nil {
+        if err := p.Messages.Create(ctx, threadID, &runID, "assistant", "了解しました。実行が完了しました。"); err != nil {
+            log.Printf("insert assistant message failed: %v", err)
+        }
+    }
     log.Printf("run %d completed: succeeded", runID)
     return nil
 }
-

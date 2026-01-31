@@ -31,7 +31,8 @@ func main() {
     log.Printf("worker started: queue=%s", q.QueueURL)
 
     runRepo := repo.NewRunRepoPG(pool)
-    processor := workerpkg.NewRunProcessor(runRepo)
+    msgRepo := repo.NewMessageRepoPG(pool)
+    processor := workerpkg.NewRunProcessor(runRepo, msgRepo)
 
     if err := workerpkg.Consume(ctx, q, processor); err != nil {
         log.Printf("worker stopped with error: %v", err)

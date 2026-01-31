@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"ai-workspace-platform/api/internal/infra/db"
+	"ai-workspace-platform/api/internal/infra/queue"
 	"ai-workspace-platform/api/internal/interface/httpapi"
 	"ai-workspace-platform/api/internal/usecase"
-    "ai-workspace-platform/api/internal/infra/queue"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -42,6 +42,12 @@ func Run() error {
     e := echo.New()
     e.HideBanner = true
     e.Use(middleware.Recover())
+
+    e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+        AllowOrigins: []string{"*"},
+        AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
+        AllowHeaders: []string{"Content-Type", "Authorization"},
+    }))
 
     httpapi.RegisterRoutes(e, u)
 

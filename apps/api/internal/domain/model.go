@@ -3,16 +3,16 @@ package domain
 import "time"
 
 type Workspace struct {
-    ID        int64
-    Name      string
-    CreatedAt time.Time
+    ID        int64     `json:"id"`
+    Name      string    `json:"name"`
+    CreatedAt time.Time `json:"created_at"`
 }
 
 type Thread struct {
-    ID          int64
-    WorkspaceID int64
-    Title       *string
-    CreatedAt   time.Time
+    ID          int64     `json:"id"`
+    WorkspaceID int64     `json:"workspace_id"`
+    Title       *string   `json:"title"`
+    CreatedAt   time.Time `json:"created_at"`
 }
 
 type RunStatus string
@@ -26,11 +26,11 @@ const (
 )
 
 type Run struct {
-    ID        int64
-    ThreadID  int64
-    Status    RunStatus
-    CreatedAt time.Time
-    UpdatedAt time.Time
+    ID        int64      `json:"id"`
+    ThreadID  int64      `json:"thread_id"`
+    Status    RunStatus  `json:"status"`
+    CreatedAt time.Time  `json:"created_at"`
+    UpdatedAt time.Time  `json:"updated_at"`
 }
 
 type Role string
@@ -41,11 +41,10 @@ const (
 )
 
 type Message struct {
-    ID        int64
-    ThreadID  int64
-    RunID     *int64
-    Role      Role
-    Content   string
-    CreatedAt time.Time
+    ID        int64      `json:"id"`
+    ThreadID  int64      `json:"thread_id"`
+    RunID     *int64     `json:"run_id"`
+    Role      Role       `json:"role"`
+    Content   string     `json:"content"`
+    CreatedAt time.Time  `json:"created_at"`
 }
-

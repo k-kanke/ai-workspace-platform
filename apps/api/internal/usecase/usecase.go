@@ -1,15 +1,17 @@
 package usecase
 
 import (
-	"context"
-	"errors"
-	"strconv"
+    "context"
+    "errors"
+    "strconv"
+    "strings"
+    "time"
 
-	"ai-workspace-platform/api/internal/domain"
-	repopg "ai-workspace-platform/api/internal/infra/repo"
+    "ai-workspace-platform/api/internal/domain"
+    repopg "ai-workspace-platform/api/internal/infra/repo"
     "ai-workspace-platform/api/internal/infra/queue"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+    "github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Usecase struct {
@@ -31,6 +33,14 @@ func New(db *pgxpool.Pool, pub queue.Publisher) *Usecase {
 }
 
 func (u *Usecase) CreateWorkspace(ctx context.Context, name *string) (*domain.Workspace, error) {
+    // Ensure non-empty name as DB requires NOT NULL
+    if name == nil || strings.TrimSpace(*name) == "" {
+        n := "Workspace"
+        // add a simple suffix to avoid all identical names if desired
+        ts := time.Now().Format("20060102-150405")
+        composed := n + " " + ts
+        name = &composed
+    }
     return u.Workspace.Create(ctx, name)
 }
 
