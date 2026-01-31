@@ -1,14 +1,14 @@
 package queue
 
 import (
-    "context"
-    "fmt"
-    "os"
+	"context"
+	"fmt"
+	"os"
 
-    "github.com/aws/aws-sdk-go-v2/aws"
-    "github.com/aws/aws-sdk-go-v2/config"
-    sqs "github.com/aws/aws-sdk-go-v2/service/sqs"
-    sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	sqs "github.com/aws/aws-sdk-go-v2/service/sqs"
+	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
 type Publisher interface {
@@ -22,10 +22,10 @@ type SQSPublisher struct {
 }
 
 func NewSQSPublisher(ctx context.Context) (*SQSPublisher, error) {
-    endpoint := os.Getenv("SQS_ENDPOINT_URL") // localstack when set
+    endpoint := os.Getenv("SQS_ENDPOINT_URL")
     region := os.Getenv("AWS_REGION")
     if region == "" { region = "us-east-1" }
-    // custom endpoint resolver
+
     var optFns []func(*config.LoadOptions) error
     if endpoint != "" {
         optFns = append(optFns, config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
@@ -42,14 +42,12 @@ func NewSQSPublisher(ctx context.Context) (*SQSPublisher, error) {
 
     q := &SQSPublisher{client: cli, queueName: os.Getenv("SQS_QUEUE_NAME")}
 
-    // Resolve queue URL if not provided explicitly
     if url := os.Getenv("SQS_QUEUE_URL"); url != "" {
         q.queueURL = url
     } else {
         if q.queueName == "" { q.queueName = "runs.fifo" }
         out, err := cli.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(q.queueName)})
         if err != nil {
-            // If using a custom endpoint (likely LocalStack), try to create the queue lazily
             if endpoint != "" {
                 attrs := map[string]string{"FifoQueue": "true", "ContentBasedDeduplication": "false", "VisibilityTimeout": "300"}
                 _, _ = cli.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(q.queueName), Attributes: attrs})
@@ -68,7 +66,7 @@ func (p *SQSPublisher) PublishRunQueued(ctx context.Context, runID int64, thread
     }
     if p.queueURL == "" { return fmt.Errorf("queueURL is empty") }
     body := fmt.Sprintf(`{"run_id":%d,"thread_id":%d}`, runID, threadID)
-    groupID := fmt.Sprintf("%d", threadID) // ensure per-thread ordering
+    groupID := fmt.Sprintf("%d", threadID)
     dedupID := fmt.Sprintf("run-%d", runID)
     _, err := p.client.SendMessage(ctx, &sqs.SendMessageInput{
         QueueUrl:               aws.String(p.queueURL),
