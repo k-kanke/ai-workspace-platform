@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -9,8 +10,10 @@ import (
 	"ai-workspace-platform/api/internal/infra/db"
 	"ai-workspace-platform/api/internal/interface/httpapi"
 	"ai-workspace-platform/api/internal/usecase"
+    "ai-workspace-platform/api/internal/infra/queue"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func Run() error {
@@ -28,10 +31,17 @@ func Run() error {
     }
     defer pool.Close()
 
-    u := usecase.New(pool)
+    pub, perr := queue.NewSQSPublisher(ctx)
+    if perr != nil {
+        log.Printf("SQS publisher init failed: %v (continuing without queue)", perr)
+    }
+    var pubInst queue.Publisher
+    if perr == nil { pubInst = pub }
+    u := usecase.New(pool, pubInst)
 
     e := echo.New()
     e.HideBanner = true
+    e.Use(middleware.Recover())
 
     httpapi.RegisterRoutes(e, u)
 

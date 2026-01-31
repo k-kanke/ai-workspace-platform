@@ -7,6 +7,7 @@ import (
 
 	"ai-workspace-platform/api/internal/domain"
 	repopg "ai-workspace-platform/api/internal/infra/repo"
+    "ai-workspace-platform/api/internal/infra/queue"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -16,14 +17,16 @@ type Usecase struct {
     Threads  domain.ThreadRepository
     Messages domain.MessageRepository
     Runs     domain.RunRepository
+    Publisher queue.Publisher
 }
 
-func New(db *pgxpool.Pool) *Usecase {
+func New(db *pgxpool.Pool, pub queue.Publisher) *Usecase {
     return &Usecase{
         Workspace: repopg.NewWorkspaceRepoPG(db),
         Threads:  repopg.NewThreadRepoPG(db),
         Messages: repopg.NewMessageRepoPG(db),
         Runs:     repopg.NewRunRepoPG(db),
+        Publisher: pub,
     }
 }
 
@@ -39,7 +42,12 @@ func (u *Usecase) PostMessageAndEnqueueRun(ctx context.Context, threadID int64, 
     if _, err := u.Messages.Create(ctx, threadID, nil, domain.RoleUser, content); err != nil {
         return nil, err
     }
-    return u.Runs.Create(ctx, threadID, domain.RunQueued)
+    run, err := u.Runs.Create(ctx, threadID, domain.RunQueued)
+    if err != nil { return nil, err }
+    if u.Publisher != nil {
+        _ = u.Publisher.PublishRunQueued(ctx, run.ID, threadID)
+    }
+    return run, nil
 }
 
 func (u *Usecase) ListMessages(ctx context.Context, threadID int64, limit int) ([]*domain.Message, error) {

@@ -24,10 +24,17 @@ services:
     environment:
       DATABASE_URL: postgres://app:app@db:5432/workspace?sslmode=disable
       PORT: "8080"
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      AWS_REGION: us-east-1
+      SQS_ENDPOINT_URL: http://localstack:4566
+      SQS_QUEUE_NAME: runs.fifo
     ports:
       - "8080:8080"
     depends_on:
       db:
+        condition: service_healthy
+      localstack:
         condition: service_healthy
 
   worker:
@@ -35,9 +42,31 @@ services:
       context: ./apps/worker
     environment:
       DATABASE_URL: postgres://app:app@db:5432/workspace?sslmode=disable
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      AWS_REGION: us-east-1
+      SQS_ENDPOINT_URL: http://localstack:4566
+      SQS_QUEUE_NAME: runs.fifo
     depends_on:
       db:
         condition: service_healthy
+      localstack:
+        condition: service_healthy
+
+  localstack:
+    image: localstack/localstack:3
+    environment:
+      - SERVICES=sqs
+      - DEBUG=1
+      - AWS_DEFAULT_REGION=us-east-1
+    ports:
+      - "4566:4566"
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal sqs list-queues >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes: []
 
 volumes:
   db_data:
