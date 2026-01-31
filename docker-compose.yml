@@ -10,7 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./migrations/20260131091517-create_initial_tables.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+      - ./migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app -d workspace"]
       interval: 5s
@@ -20,6 +20,7 @@ services:
   api:
     build:
       context: ./apps/api
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgres://app:app@db:5432/workspace?sslmode=disable
       PORT: "8080"
