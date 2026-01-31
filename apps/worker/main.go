@@ -1,34 +1,28 @@
 package main
 
 import (
+	"context"
 	"log"
-	"os"
 	"os/signal"
 	"syscall"
-	"time"
+
+	"ai-workspace-platform/worker/internal/queue"
+	workerpkg "ai-workspace-platform/worker/internal/worker"
 )
 
 func main() {
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		log.Println("DATABASE_URL is not set")
-	} else {
-		log.Println("worker started")
-	}
+    ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+    defer cancel()
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+    q, err := queue.NewSQSClient(ctx)
+    if err != nil {
+        log.Fatalf("failed to init SQS: %v", err)
+    }
+    log.Printf("worker started: queue=%s", q.QueueURL)
 
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			log.Println("worker tick")
-		case <-stop:
-			log.Println("worker stopped")
-			return
-		}
-	}
+    if err := workerpkg.Consume(ctx, q); err != nil {
+        log.Printf("worker stopped with error: %v", err)
+    } else {
+        log.Printf("worker stopped")
+    }
 }
