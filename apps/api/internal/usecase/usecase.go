@@ -48,6 +48,14 @@ func (u *Usecase) CreateThread(ctx context.Context, workspaceID int64, title *st
     return u.Threads.Create(ctx, workspaceID, title)
 }
 
+func (u *Usecase) ListWorkspaces(ctx context.Context, limit, offset int) ([]*domain.Workspace, error) {
+    return u.Workspace.List(ctx, limit, offset)
+}
+
+func (u *Usecase) ListThreadsByWorkspace(ctx context.Context, wsID int64, limit, offset int) ([]*domain.Thread, error) {
+    return u.Threads.ListByWorkspace(ctx, wsID, limit, offset)
+}
+
 func (u *Usecase) PostMessageAndEnqueueRun(ctx context.Context, threadID int64, content string) (*domain.Run, error) {
     if _, err := u.Messages.Create(ctx, threadID, nil, domain.RoleUser, content); err != nil {
         return nil, err

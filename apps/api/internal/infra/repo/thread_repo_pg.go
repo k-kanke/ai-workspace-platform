@@ -29,3 +29,23 @@ func (r *ThreadRepoPG) Get(ctx context.Context, id int64) (*domain.Thread, error
     if err != nil { return nil, err }
     return &t, nil
 }
+
+func (r *ThreadRepoPG) ListByWorkspace(ctx context.Context, workspaceID int64, limit, offset int) ([]*domain.Thread, error) {
+    if limit <= 0 || limit > 200 { limit = 50 }
+    if offset < 0 { offset = 0 }
+    rows, err := r.DB.Query(ctx,
+        `SELECT id, workspace_id, title, created_at FROM threads
+         WHERE workspace_id=$1
+         ORDER BY id DESC
+         LIMIT $2 OFFSET $3`, workspaceID, limit, offset,
+    )
+    if err != nil { return nil, err }
+    defer rows.Close()
+    out := make([]*domain.Thread, 0, limit)
+    for rows.Next() {
+        var t domain.Thread
+        if err := rows.Scan(&t.ID, &t.WorkspaceID, &t.Title, &t.CreatedAt); err != nil { return nil, err }
+        out = append(out, &t)
+    }
+    return out, rows.Err()
+}

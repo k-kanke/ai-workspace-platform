@@ -5,11 +5,13 @@ import "context"
 type WorkspaceRepository interface {
     Create(ctx context.Context, name *string) (*Workspace, error)
     Get(ctx context.Context, id int64) (*Workspace, error)
+    List(ctx context.Context, limit, offset int) ([]*Workspace, error)
 }
 
 type ThreadRepository interface {
     Create(ctx context.Context, workspaceID int64, title *string) (*Thread, error)
     Get(ctx context.Context, id int64) (*Thread, error)
+    ListByWorkspace(ctx context.Context, workspaceID int64, limit, offset int) ([]*Thread, error)
 }
 
 type MessageRepository interface {

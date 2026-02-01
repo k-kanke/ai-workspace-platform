@@ -37,6 +37,14 @@ export async function createThread(workspace_id: number, title?: string | null):
   });
 }
 
+export async function listWorkspaces(limit = 50, offset = 0): Promise<Workspace[]> {
+  return http<Workspace[]>(`/workspaces?limit=${limit}&offset=${offset}`);
+}
+
+export async function listThreadsByWorkspace(workspaceId: number, limit = 50, offset = 0): Promise<Thread[]> {
+  return http<Thread[]>(`/threads?workspace_id=${workspaceId}&limit=${limit}&offset=${offset}`);
+}
+
 export async function listMessages(threadId: number): Promise<Message[]> {
   return http<Message[]>(`/threads/${threadId}/messages`);
 }
@@ -51,4 +59,3 @@ export async function postMessage(threadId: number, content: string): Promise<Ru
 export async function getRun(runId: number): Promise<Run> {
   return http<Run>(`/runs/${runId}`);
 }
-

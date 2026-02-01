@@ -19,7 +19,9 @@ func RegisterRoutes(e *echo.Echo, u *usecase.Usecase, hub *stream.Hub) {
     rh := &RunHandler{U: u, Hub: hub}
 
     e.POST("/workspace", wh.Create)
+    e.GET("/workspaces", wh.List)
     e.POST("/threads", th.Create)
+    e.GET("/threads", th.ListByWorkspace)
     e.GET("/threads/:id/messages", mh.ListByThread)
     e.POST("/threads/:id/messages", mh.PostAndEnqueue)
     e.POST("/threads/:id/runs", rh.Create)

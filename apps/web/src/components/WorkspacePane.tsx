@@ -70,20 +70,31 @@ export default function WorkspacePane({
 
   useEffect(() => () => { if (esRef.current) { esRef.current.close(); esRef.current = null; } }, []);
 
-  // auto-grow textarea up to 4 rows
+  // auto-grow textarea up to 4 rows (and collapse back to 1 row when empty)
   useEffect(() => {
     const ta = taRef.current;
     if (!ta) return;
-    // reset to auto to recalc
-    ta.style.height = 'auto';
     const cs = window.getComputedStyle(ta);
     const lh = parseFloat(cs.lineHeight || '20');
     const pad = parseFloat(cs.paddingTop || '0') + parseFloat(cs.paddingBottom || '0');
     const brd = parseFloat(cs.borderTopWidth || '0') + parseFloat(cs.borderBottomWidth || '0');
-    const maxPx = lh * 4 + pad + brd;
-    const newH = Math.min(ta.scrollHeight, maxPx);
+    const base = lh + pad + brd; // 1 row
+    const maxPx = lh * 4 + pad + brd; // 4 rows
+
+    // reset to auto to recalc natural height for current content
+    ta.style.height = 'auto';
+
+    if (!input) {
+      // collapse to a single row when empty
+      ta.style.height = `${base}px`;
+      ta.style.overflowY = 'hidden';
+      return;
+    }
+
+    const need = ta.scrollHeight;
+    const newH = Math.max(base, Math.min(need, maxPx));
     ta.style.height = `${newH}px`;
-    ta.style.overflowY = ta.scrollHeight > maxPx ? 'auto' : 'hidden';
+    ta.style.overflowY = need > maxPx ? 'auto' : 'hidden';
   }, [input]);
 
   const onSend = useCallback(async () => {
@@ -173,7 +184,7 @@ export default function WorkspacePane({
       <div className="border-t border-zinc-200 px-3 py-2 bg-white flex gap-2 items-end">
         <textarea
           className="flex-1 border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 resize-none"
-          placeholder="メッセージを入力...（Ctrl/⌘+Enterで送信）"
+          placeholder="..."
           rows={1}
           value={input}
           onChange={(e) => setInput(e.target.value)}
