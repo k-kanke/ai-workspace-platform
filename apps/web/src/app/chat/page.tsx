@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Message, Run, RunStatus, Thread, Workspace } from "@/lib/api";
-import { createThread, createWorkspace, getRun, listMessages, postMessage } from "@/lib/api";
+import { createThread, createWorkspace, listMessages, postMessage } from "@/lib/api";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 function useLocalIds() {
   const [workspaceId, setWorkspaceId] = useState<number | null>(null);
@@ -39,6 +41,8 @@ export default function ChatPage() {
   const [pendingRun, setPendingRun] = useState<Run | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(false);
+  const esRef = useRef<EventSource | null>(null);
+  const [assistantDraft, setAssistantDraft] = useState<string>("");
 
   // lazy bootstrap: create workspace/thread if missing
   async function initThreadManually() {
@@ -90,24 +94,12 @@ export default function ChatPage() {
     load();
   }, [threadId, pendingRun?.status]);
 
-  // poll run status when pending
+  // cleanup EventSource on unmount
   useEffect(() => {
-    if (!pendingRun) return;
-    let stopped = false;
-    const id = setInterval(async () => {
-      if (stopped) return;
-      try {
-        const r = await getRun(pendingRun.id);
-        if (r.status !== "queued" && r.status !== "running") {
-          setPendingRun(r);
-          clearInterval(id);
-        }
-      } catch (e) {
-        // ignore transient errors
-      }
-    }, 800);
-    return () => { stopped = true; clearInterval(id); };
-  }, [pendingRun?.id]);
+    return () => {
+      if (esRef.current) { esRef.current.close(); esRef.current = null; }
+    };
+  }, []);
 
   const onSend = useCallback(async () => {
     if (!threadId || !input.trim()) return;
@@ -116,6 +108,41 @@ export default function ChatPage() {
       const run = await postMessage(threadId, input.trim());
       setPendingRun(run);
       setInput("");
+
+      // close previous stream if any
+      if (esRef.current) { esRef.current.close(); esRef.current = null; }
+      setAssistantDraft("");
+
+      const es = new EventSource(`${API_BASE}/runs/${run.id}/stream`);
+      esRef.current = es;
+      es.addEventListener("status", (e) => {
+        try {
+          const s = (e as MessageEvent).data as RunStatus;
+          setPendingRun((prev) => (prev ? { ...prev, status: s } : prev));
+        } catch {}
+      });
+      es.addEventListener("message", (e) => {
+        const data = (e as MessageEvent).data as string;
+        setAssistantDraft(data);
+      });
+      es.addEventListener("done", async () => {
+        es.close();
+        esRef.current = null;
+        // refresh messages once for consistency
+        if (threadId) {
+          try {
+            const msgs = await listMessages(threadId);
+            setMessages(msgs);
+          } catch {}
+        }
+        setAssistantDraft("");
+        setPendingRun((prev) => (prev ? { ...prev, status: "succeeded" } as Run : prev));
+      });
+      es.onerror = () => {
+        // best-effort close on error
+        try { es.close(); } catch {}
+        esRef.current = null;
+      };
     } catch (e: any) {
       setError(e?.message || "送信に失敗しました");
     }
@@ -155,6 +182,12 @@ export default function ChatPage() {
               <span>{m.content}</span>
             </li>
           ))}
+          {assistantDraft && (
+            <li className="text-sm opacity-80">
+              <span className="font-mono mr-2 text-zinc-500">[assistant]</span>
+              <span>{assistantDraft}</span>
+            </li>
+          )}
         </ul>
       </div>
 
@@ -190,9 +223,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      <div className="text-xs text-zinc-500">
-        API: {process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"}
-      </div>
+      <div className="text-xs text-zinc-500">API: {API_BASE}</div>
 
       <div className="text-xs text-zinc-500">
         状態: {initializing ? "初期化中" : "待機中"}

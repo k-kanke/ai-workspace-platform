@@ -1,21 +1,22 @@
 package httpapi
 
 import (
-	"net/http"
+    "net/http"
 
-	"ai-workspace-platform/api/internal/usecase"
+    "ai-workspace-platform/api/internal/stream"
+    "ai-workspace-platform/api/internal/usecase"
 
-	"github.com/labstack/echo/v4"
+    "github.com/labstack/echo/v4"
 )
 
-func RegisterRoutes(e *echo.Echo, u *usecase.Usecase) {
+func RegisterRoutes(e *echo.Echo, u *usecase.Usecase, hub *stream.Hub) {
     e.GET("/healthz", func(c echo.Context) error { return c.String(http.StatusOK, "ok") })
     e.GET("/", func(c echo.Context) error { return c.String(http.StatusOK, "ai-workspace api") })
 
     wh := &WorkspaceHandler{U: u}
     th := &ThreadHandler{U: u}
     mh := &MessageHandler{U: u}
-    rh := &RunHandler{U: u}
+    rh := &RunHandler{U: u, Hub: hub}
 
     e.POST("/workspace", wh.Create)
     e.POST("/threads", th.Create)
@@ -23,5 +24,5 @@ func RegisterRoutes(e *echo.Echo, u *usecase.Usecase) {
     e.POST("/threads/:id/messages", mh.PostAndEnqueue)
     e.POST("/threads/:id/runs", rh.Create)
     e.GET("/runs/:id", rh.Get)
+    e.GET("/runs/:id/stream", rh.Stream)
 }
-

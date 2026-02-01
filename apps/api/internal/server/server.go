@@ -1,19 +1,21 @@
 package server
 
 import (
-	"context"
-	"log"
-	"net/http"
-	"os"
-	"time"
+    "context"
+    "log"
+    "net/http"
+    "os"
+    "time"
 
-	"ai-workspace-platform/api/internal/infra/db"
-	"ai-workspace-platform/api/internal/infra/queue"
-	"ai-workspace-platform/api/internal/interface/httpapi"
-	"ai-workspace-platform/api/internal/usecase"
+    "ai-workspace-platform/api/internal/infra/db"
+    "ai-workspace-platform/api/internal/infra/queue"
+    "ai-workspace-platform/api/internal/interface/httpapi"
+    "ai-workspace-platform/api/internal/notify"
+    "ai-workspace-platform/api/internal/stream"
+    "ai-workspace-platform/api/internal/usecase"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+    "github.com/labstack/echo/v4"
+    "github.com/labstack/echo/v4/middleware"
 )
 
 func Run() error {
@@ -49,7 +51,10 @@ func Run() error {
         AllowHeaders: []string{"Content-Type", "Authorization"},
     }))
 
-    httpapi.RegisterRoutes(e, u)
+    hub := stream.NewHub()
+    notify.StartAssistantMessageListener(ctx, pool, hub)
+
+    httpapi.RegisterRoutes(e, u, hub)
 
     srv := &http.Server{
         Addr:              ":" + port,

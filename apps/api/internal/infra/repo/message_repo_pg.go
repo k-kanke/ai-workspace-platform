@@ -42,3 +42,19 @@ func (r *MessageRepoPG) ListByThread(ctx context.Context, threadID int64, limit 
     }
     return out, rows.Err()
 }
+
+func (r *MessageRepoPG) FindAssistantByRun(ctx context.Context, runID int64) (*domain.Message, error) {
+    row := r.DB.QueryRow(ctx,
+        `SELECT id, thread_id, run_id, role, content, created_at
+         FROM messages
+         WHERE run_id=$1 AND role='assistant'
+         ORDER BY id ASC LIMIT 1`, runID,
+    )
+    var m domain.Message
+    var roleStr string
+    if err := row.Scan(&m.ID, &m.ThreadID, &m.RunID, &roleStr, &m.Content, &m.CreatedAt); err != nil {
+        return nil, err
+    }
+    m.Role = domain.Role(roleStr)
+    return &m, nil
+}

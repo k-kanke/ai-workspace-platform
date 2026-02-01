@@ -15,6 +15,8 @@ type ThreadRepository interface {
 type MessageRepository interface {
     Create(ctx context.Context, threadID int64, runID *int64, role Role, content string) (*Message, error)
     ListByThread(ctx context.Context, threadID int64, limit int) ([]*Message, error)
+    // FindAssistantByRun returns the first assistant message associated with the run, if any.
+    FindAssistantByRun(ctx context.Context, runID int64) (*Message, error)
 }
 
 type RunRepository interface {
