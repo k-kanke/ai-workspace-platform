@@ -20,6 +20,7 @@ export default function Sidebar({
   onToggleWs,
   onLoadThreads,
   onOpenThread,
+  onCreateThread,
 }: {
   panes: OpenPane[];
   saved: SavedItem[];
@@ -34,6 +35,7 @@ export default function Sidebar({
   onToggleWs: (wsId: number) => void;
   onLoadThreads: (wsId: number) => void;
   onOpenThread: (wsId: number, thId: number) => void;
+  onCreateThread: (wsId: number) => void;
 }) {
   const canOpen = panes.length < 3;
   const handleNew = useCallback(() => { if (canOpen) onNewPane(); }, [canOpen, onNewPane]);
@@ -46,32 +48,34 @@ export default function Sidebar({
       >
         New Workspace
       </button>
-      <div className="text-xs text-zinc-500">Open Workspaces</div>
-      <ul className="flex-1 flex flex-col gap-1 overflow-auto pr-1">
-        {panes.map(p => (
-          <li key={p.id} className="group flex items-center justify-between gap-2 border border-zinc-200 rounded-md px-2 py-2 bg-white hover:shadow-sm">
-            <button className="text-left text-sm truncate flex-1" onClick={() => onFocus(p.id)}>
-              WS {p.workspaceId} / TH {p.threadId}
-            </button>
-            <button className="text-xs text-zinc-500 hover:text-red-600" onClick={() => onClosePane(p.id)}>×</button>
-          </li>
-        ))}
-      </ul>
-      <div className="text-xs text-zinc-500 mt-2">Workspaces</div>
-      <ul className="max-h-56 overflow-auto pr-1 mt-1 flex flex-col gap-1">
+      <div className="text-xs text-zinc-500 mt-1">Workspaces</div>
+      <ul className="flex-1 overflow-auto pr-1 mt-1 flex flex-col gap-1">
         {workspaces.map(ws => {
           const isOpen = expanded.has(ws.id);
           const loading = loadingWs.has(ws.id);
           const threads = threadsByWs[ws.id] || [];
           return (
             <li key={`ws-${ws.id}`} className="border border-zinc-200 rounded-md bg-white">
-              <button
-                className="w-full text-left text-sm px-2 py-2 flex items-center justify-between hover:bg-zinc-50"
-                onClick={() => { onToggleWs(ws.id); if (!isOpen && threads.length === 0) onLoadThreads(ws.id); }}
-              >
-                <span className="truncate">{ws.name || `Workspace ${ws.id}`}</span>
-                <span className="text-xs text-zinc-500">{isOpen ? "▾" : "▸"}</span>
-              </button>
+              <div className="w-full text-sm px-2 py-2 flex items-center justify-between hover:bg-zinc-50">
+                <button
+                  className="flex-1 text-left truncate"
+                  onClick={() => { onToggleWs(ws.id); if (!isOpen && threads.length === 0) onLoadThreads(ws.id); }}
+                >
+                  {ws.name || `Workspace ${ws.id}`}
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="text-xs px-2 py-1 rounded border border-zinc-200 hover:bg-zinc-100"
+                    title="New thread"
+                    onClick={(e) => { e.stopPropagation(); onCreateThread(ws.id); }}
+                  >+ Thread</button>
+                  <button
+                    className="text-xs text-zinc-500"
+                    title={isOpen ? 'Collapse' : 'Expand'}
+                    onClick={(e) => { e.stopPropagation(); onToggleWs(ws.id); if (!isOpen && threads.length === 0) onLoadThreads(ws.id); }}
+                  >{isOpen ? "▾" : "▸"}</button>
+                </div>
+              </div>
               {isOpen && (
                 <ul className="px-2 pb-2 flex flex-col gap-1">
                   {loading && <li className="text-[11px] text-zinc-500 px-2 py-1">Loading...</li>}
@@ -94,6 +98,17 @@ export default function Sidebar({
             </li>
           );
         })}
+      </ul>
+      <div className="text-xs text-zinc-500 mt-2">Open Workspaces</div>
+      <ul className="max-h-40 overflow-auto pr-1 mt-1 flex flex-col gap-1">
+        {panes.map(p => (
+          <li key={p.id} className="group flex items-center justify-between gap-2 border border-zinc-200 rounded-md px-2 py-2 bg-white hover:shadow-sm">
+            <button className="text-left text-sm truncate flex-1" onClick={() => onFocus(p.id)}>
+              WS {p.workspaceId} / TH {p.threadId}
+            </button>
+            <button className="text-xs text-zinc-500 hover:text-red-600" onClick={() => onClosePane(p.id)}>×</button>
+          </li>
+        ))}
       </ul>
       <div className="text-[10px] text-zinc-400">Max 3 panes open at once</div>
     </aside>

@@ -28,7 +28,6 @@ export default function WorkspacePane({
   const [assistantDraft, setAssistantDraft] = useState<string>("");
   const taRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // init if not provided
   useEffect(() => {
     let cancelled = false;
     async function ensureThread() {
@@ -52,7 +51,6 @@ export default function WorkspacePane({
     return () => { cancelled = true; };
   }, []);
 
-  // fetch messages when thread ready
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -70,7 +68,6 @@ export default function WorkspacePane({
 
   useEffect(() => () => { if (esRef.current) { esRef.current.close(); esRef.current = null; } }, []);
 
-  // auto-grow textarea up to 4 rows (and collapse back to 1 row when empty)
   useEffect(() => {
     const ta = taRef.current;
     if (!ta) return;
@@ -81,11 +78,9 @@ export default function WorkspacePane({
     const base = lh + pad + brd; // 1 row
     const maxPx = lh * 4 + pad + brd; // 4 rows
 
-    // reset to auto to recalc natural height for current content
     ta.style.height = 'auto';
 
     if (!input) {
-      // collapse to a single row when empty
       ta.style.height = `${base}px`;
       ta.style.overflowY = 'hidden';
       return;
@@ -102,7 +97,6 @@ export default function WorkspacePane({
     setError(null);
     const content = input.trim();
     setInput("");
-    // optimistic user display
     const tempId = Math.random();
     setMessages((prev) => [...prev, { id: tempId as any, thread_id: threadId, role: "user", content, created_at: new Date().toISOString() } as Message]);
     try {
@@ -128,7 +122,6 @@ export default function WorkspacePane({
       es.onerror = async () => {
         try { es.close(); } catch {}
         esRef.current = null;
-        // best effort: refresh and re-enable send
         if (threadId) {
           try { const msgs = await listMessages(threadId); setMessages(msgs); } catch {}
         }

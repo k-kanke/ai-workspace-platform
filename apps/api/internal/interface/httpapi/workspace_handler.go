@@ -27,7 +27,6 @@ func (h *WorkspaceHandler) Create(c echo.Context) error {
 }
 
 func (h *WorkspaceHandler) List(c echo.Context) error {
-    // simple pagination
     limit := 50
     offset := 0
     if v := c.QueryParam("limit"); v != "" { if n, err := strconv.Atoi(v); err == nil { limit = n } }

@@ -67,9 +67,11 @@ export default function WorkspacesPage() {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [threadsByWs, setThreadsByWs] = useState<Record<number, Thread[]>>({});
   const [loadingWs, setLoadingWs] = useState<Set<number>>(new Set());
+  const [showNewThread, setShowNewThread] = useState(false);
+  const [newThreadWs, setNewThreadWs] = useState<number | null>(null);
+  const [newThreadTitle, setNewThreadTitle] = useState("");
 
   useEffect(() => {
-    // load workspaces on mount
     (async () => {
       try { setWorkspaces(await listWorkspaces()); } catch {}
     })();
@@ -108,11 +110,24 @@ export default function WorkspacesPage() {
     openSaved(wsId, thId);
   }, [openSaved]);
 
+  const createThreadInWorkspace = useCallback(async (wsId: number) => {
+    try {
+      const th = await createThread(wsId, null);
+      // update list cache
+      setThreadsByWs(prev => ({ ...prev, [wsId]: [th, ...(prev[wsId] || [])] }));
+      // expand and open new thread
+      setExpanded(prev => new Set(prev).add(wsId));
+      openSaved(wsId, th.id);
+    } catch (e) {
+      // noop simple failure
+    }
+  }, [openSaved]);
+
   // Do not auto-open a workspace on load; user explicitly opens via sidebar
 
   return (
     <div className="h-screen overflow-hidden bg-zinc-100">
-      <AppHeader onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
+      <AppHeader onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} onNewThread={() => { setShowNewThread(true); setNewThreadWs(workspaces[0]?.id ?? null); }} />
       <div className="mx-auto max-w-[1400px] px-4 flex gap-4 h-[calc(100vh-49px)] overflow-hidden">
         {sidebarOpen && (
           <Sidebar
@@ -129,6 +144,7 @@ export default function WorkspacesPage() {
             onToggleWs={toggleWs}
             onLoadThreads={loadThreads}
             onOpenThread={openThread}
+            onCreateThread={createThreadInWorkspace}
           />
         )}
         <main className="flex-1 py-3 h-full overflow-hidden">
@@ -150,6 +166,51 @@ export default function WorkspacesPage() {
           </div>
         </main>
       </div>
+      {showNewThread && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={() => setShowNewThread(false)}>
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-sm font-medium mb-3">Create Thread</div>
+            <div className="flex flex-col gap-3">
+              <label className="text-xs text-zinc-600">Workspace</label>
+              <select
+                className="border border-zinc-200 rounded-md px-2 py-2 text-sm"
+                value={newThreadWs ?? ''}
+                onChange={(e) => setNewThreadWs(Number(e.target.value) || null)}
+              >
+                <option value="" disabled>Select workspace</option>
+                {workspaces.map(ws => (
+                  <option key={ws.id} value={ws.id}>{ws.name || `Workspace ${ws.id}`}</option>
+                ))}
+              </select>
+              <label className="text-xs text-zinc-600">Title (optional)</label>
+              <input
+                className="border border-zinc-200 rounded-md px-2 py-2 text-sm"
+                placeholder="e.g. Investigation"
+                value={newThreadTitle}
+                onChange={(e) => setNewThreadTitle(e.target.value)}
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" onClick={() => setShowNewThread(false)}>Cancel</button>
+                <button
+                  className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white disabled:opacity-50"
+                  disabled={!newThreadWs}
+                  onClick={async () => {
+                    if (!newThreadWs) return;
+                    try {
+                      const th = await createThread(newThreadWs, newThreadTitle || null);
+                      setThreadsByWs(prev => ({ ...prev, [newThreadWs]: [th, ...(prev[newThreadWs] || [])] }));
+                      setExpanded(prev => new Set(prev).add(newThreadWs));
+                      openSaved(newThreadWs, th.id);
+                      setShowNewThread(false);
+                      setNewThreadTitle('');
+                    } catch {}
+                  }}
+                >Create</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
