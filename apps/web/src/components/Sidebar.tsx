@@ -3,7 +3,13 @@
 import { useCallback, useState } from "react";
 import type { Workspace, Thread } from "@/lib/api";
 
-export type OpenPane = { id: string; workspaceId: number; threadId: number; title?: string | null };
+export type OpenPane = {
+  id: string;
+  workspaceId: number;
+  threadId: number;
+  workspaceName?: string | null;
+  threadTitle?: string | null;
+};
 export type SavedItem = { workspaceId: number; threadId: number; title?: string | null };
 
 export default function Sidebar({
@@ -126,18 +132,7 @@ export default function Sidebar({
           );
         })}
       </ul>
-      <div className="text-xs text-zinc-500 mt-2">Open Workspaces</div>
-      <ul className="max-h-40 overflow-auto pr-1 mt-1 flex flex-col gap-1">
-        {panes.map(p => (
-          <li key={p.id} className="group flex items-center justify-between gap-2 border border-zinc-200 rounded-md px-2 py-2 bg-white hover:shadow-sm">
-            <button className="text-left text-sm truncate flex-1" onClick={() => onFocus(p.id)}>
-              WS {p.workspaceId} / TH {p.threadId}
-            </button>
-            <button className="text-xs text-zinc-500 hover:text-red-600" onClick={() => onClosePane(p.id)}>×</button>
-          </li>
-        ))}
-      </ul>
-      <div className="text-[10px] text-zinc-400">Max 3 panes open at once</div>
+      <div className="text-[10px] text-zinc-400 mt-2">Max 3 panes open at once</div>
     </aside>
   );
 }

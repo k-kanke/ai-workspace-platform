@@ -9,16 +9,22 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"
 export default function WorkspacePane({
   initialWorkspaceId,
   initialThreadId,
+  initialWorkspaceName,
+  initialThreadTitle,
   onReady,
   onClose,
 }: {
   initialWorkspaceId?: number;
   initialThreadId?: number;
-  onReady: (wsId: number, thId: number) => void;
+  initialWorkspaceName?: string | null;
+  initialThreadTitle?: string | null;
+  onReady: (wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => void;
   onClose: () => void;
 }) {
   const [workspaceId, setWorkspaceId] = useState<number | null>(initialWorkspaceId ?? null);
   const [threadId, setThreadId] = useState<number | null>(initialThreadId ?? null);
+  const [workspaceName, setWorkspaceName] = useState<string | null>(initialWorkspaceName ?? null);
+  const [threadTitle, setThreadTitle] = useState<string | null>(initialThreadTitle ?? null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [pendingRun, setPendingRun] = useState<Run | null>(null);
@@ -39,7 +45,9 @@ export default function WorkspacePane({
         if (!cancelled) {
           setWorkspaceId(ws.id);
           setThreadId(th.id);
-          onReady(ws.id, th.id);
+          setWorkspaceName(ws.name ?? null);
+          setThreadTitle(th.title ?? null);
+          onReady(ws.id, th.id, ws.name ?? null, th.title ?? null);
         }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "初期化に失敗しました");
@@ -145,8 +153,8 @@ export default function WorkspacePane({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50">
-        <div className="font-medium">Workspace {workspaceId ?? "-"}</div>
-        <div className="text-sm text-zinc-500">/ Thread {threadId ?? "-"}</div>
+        <div className="font-medium">{workspaceName || `Workspace ${workspaceId ?? "-"}`}</div>
+        <div className="text-sm text-zinc-500">/ {threadTitle || `Thread ${threadId ?? "-"}`}</div>
         <div className="ml-auto">{statusBadge}</div>
         <button className="ml-2 text-sm text-zinc-500 hover:text-red-600" onClick={onClose}>×</button>
       </div>

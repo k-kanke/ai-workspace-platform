@@ -27,11 +27,11 @@ function useOpenPanes() {
     localStorage.setItem("saved_threads", JSON.stringify(saved));
   }, [saved]);
 
-  const addPane = useCallback((wsId: number, thId: number) => {
+  const addPane = useCallback((wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => {
     setPanes((prev) => {
       if (prev.length >= 3) return prev;
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      return [...prev, { id, workspaceId: wsId, threadId: thId }];
+      return [...prev, { id, workspaceId: wsId, threadId: thId, workspaceName: wsName ?? null, threadTitle: thTitle ?? null }];
     });
   }, []);
   const ensureSaved = useCallback((wsId: number, thId: number) => {
@@ -49,8 +49,8 @@ function useOpenPanes() {
   const focusPane = useCallback((_id: string) => {
     // MVP: no-op, panes are always visible
   }, []);
-  const openSaved = useCallback((wsId: number, thId: number) => {
-    addPane(wsId, thId);
+  const openSaved = useCallback((wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => {
+    addPane(wsId, thId, wsName, thTitle);
   }, [addPane]);
   return { panes, saved, setPanes, setSaved, addPane, ensureSaved, closePane, focusPane, openSaved } as const;
 }
@@ -75,8 +75,8 @@ export default function WorkspacesPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
 
-  const onPaneReady = useCallback((idx: number, wsId: number, thId: number) => {
-    setPanes((prev) => prev.map((p, i) => i === idx ? { ...p, workspaceId: wsId, threadId: thId } : p));
+  const onPaneReady = useCallback((idx: number, wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => {
+    setPanes((prev) => prev.map((p, i) => i === idx ? { ...p, workspaceId: wsId, threadId: thId, workspaceName: wsName ?? null, threadTitle: thTitle ?? null } : p));
     ensureSaved(wsId, thId);
   }, [setPanes, ensureSaved]);
 
@@ -108,8 +108,10 @@ export default function WorkspacesPage() {
   }, []);
 
   const openThread = useCallback((wsId: number, thId: number) => {
-    openSaved(wsId, thId);
-  }, [openSaved]);
+    const wsName = workspaces.find(w => w.id === wsId)?.name ?? null;
+    const thTitle = (threadsByWs[wsId] || []).find(t => t.id === thId)?.title ?? null;
+    openSaved(wsId, thId, wsName, thTitle);
+  }, [openSaved, threadsByWs, workspaces]);
 
   const openNewThreadModal = useCallback((wsId: number) => {
     setNewThreadWs(wsId);
@@ -149,7 +151,9 @@ export default function WorkspacesPage() {
                   <WorkspacePane
                     initialWorkspaceId={p.workspaceId}
                     initialThreadId={p.threadId}
-                    onReady={(ws, th) => onPaneReady(idx, ws, th)}
+                    initialWorkspaceName={p.workspaceName}
+                    initialThreadTitle={p.threadTitle}
+                    onReady={(ws, th, wsName, thTitle) => onPaneReady(idx, ws, th, wsName, thTitle)}
                     onClose={() => closePane(p.id)}
                   />
                 ) : (
@@ -194,7 +198,8 @@ export default function WorkspacesPage() {
                       const th = await createThread(newThreadWs, newThreadTitle || null);
                       setThreadsByWs(prev => ({ ...prev, [newThreadWs]: [th, ...(prev[newThreadWs] || [])] }));
                       setExpanded(prev => new Set(prev).add(newThreadWs));
-                      openSaved(newThreadWs, th.id);
+                      const wsName = workspaces.find(w => w.id === newThreadWs)?.name ?? null;
+                      openSaved(newThreadWs, th.id, wsName, th.title ?? null);
                       setShowNewThread(false);
                       setNewThreadTitle('');
                     } catch {}
