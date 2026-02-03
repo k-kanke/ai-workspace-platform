@@ -224,11 +224,8 @@ export default function WorkspacesPage() {
                   const name = newWorkspaceName.trim() || null;
                   const ws = await createWorkspace(name);
                   setWorkspaces(prev => [ws, ...prev.filter(w => w.id !== ws.id)]);
-                  const th = await createThread(ws.id, null);
-                  setThreadsByWs(prev => ({ ...prev, [ws.id]: [th, ...(prev[ws.id] || [])] }));
+                  setThreadsByWs(prev => ({ ...prev, [ws.id]: prev[ws.id] || [] }));
                   setExpanded(prev => new Set(prev).add(ws.id));
-                  ensureSaved(ws.id, th.id);
-                  addPane(ws.id, th.id);
                   closeNewWorkspace();
                 } catch {}
               }}

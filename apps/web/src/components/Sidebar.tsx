@@ -38,13 +38,12 @@ export default function Sidebar({
   onCreateThread: (wsId: number) => void;
 }) {
   const canOpen = panes.length < 3;
-  const handleNew = useCallback(() => { if (canOpen) onNewPane(); }, [canOpen, onNewPane]);
+  const handleNew = useCallback(() => { onNewPane(); }, [onNewPane]);
   return (
     <aside className="w-56 border-r border-zinc-200 bg-white h-[calc(100vh-49px)] sticky top-[49px] p-3 flex flex-col gap-3 shadow-sm">
       <button
-        className="w-full text-sm px-3 py-2 rounded-md bg-zinc-900 hover:bg-zinc-800 text-white disabled:opacity-50"
+        className="w-full text-sm px-3 py-2 rounded-md bg-zinc-900 hover:bg-zinc-800 text-white"
         onClick={handleNew}
-        disabled={!canOpen}
       >
         New Workspace
       </button>
