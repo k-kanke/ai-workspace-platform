@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { Workspace, Thread } from "@/lib/api";
 
 export type OpenPane = { id: string; workspaceId: number; threadId: number; title?: string | null };
@@ -39,6 +39,7 @@ export default function Sidebar({
 }) {
   const canOpen = panes.length < 3;
   const handleNew = useCallback(() => { onNewPane(); }, [onNewPane]);
+  const [menuOpenWs, setMenuOpenWs] = useState<number | null>(null);
   return (
     <aside className="w-56 border-r border-zinc-200 bg-white h-[calc(100vh-49px)] sticky top-[49px] p-3 flex flex-col gap-3 shadow-sm">
       <button
@@ -55,25 +56,52 @@ export default function Sidebar({
           const threads = threadsByWs[ws.id] || [];
           return (
             <li key={`ws-${ws.id}`} className="border border-zinc-200 rounded-md bg-white">
-              <div className="w-full text-sm px-2 py-2 flex items-center justify-between hover:bg-zinc-50">
+              <div className="w-full text-sm px-2 py-2 flex items-center justify-between hover:bg-zinc-50 relative">
                 <button
                   className="flex-1 text-left truncate"
-                  onClick={() => { onToggleWs(ws.id); if (!isOpen && threads.length === 0) onLoadThreads(ws.id); }}
+                  onClick={() => {
+                    setMenuOpenWs(null);
+                    onToggleWs(ws.id);
+                    if (!isOpen && threads.length === 0) onLoadThreads(ws.id);
+                  }}
                 >
                   {ws.name || `Workspace ${ws.id}`}
                 </button>
                 <div className="flex items-center gap-2">
                   <button
                     className="text-xs px-2 py-1 rounded border border-zinc-200 hover:bg-zinc-100"
-                    title="New thread"
-                    onClick={(e) => { e.stopPropagation(); onCreateThread(ws.id); }}
-                  >+ Thread</button>
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpenWs === ws.id}
+                    title="Workspace actions"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpenWs((prev) => (prev === ws.id ? null : ws.id));
+                    }}
+                  >•••</button>
                   <button
                     className="text-xs text-zinc-500"
                     title={isOpen ? 'Collapse' : 'Expand'}
                     onClick={(e) => { e.stopPropagation(); onToggleWs(ws.id); if (!isOpen && threads.length === 0) onLoadThreads(ws.id); }}
                   >{isOpen ? "▾" : "▸"}</button>
                 </div>
+                {menuOpenWs === ws.id && (
+                  <div
+                    className="absolute right-2 top-10 z-20 w-36 rounded-md border border-zinc-200 bg-white shadow-lg"
+                    role="menu"
+                  >
+                    <button
+                      className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50"
+                      role="menuitem"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpenWs(null);
+                        onCreateThread(ws.id);
+                      }}
+                    >
+                      New thread
+                    </button>
+                  </div>
+                )}
               </div>
               {isOpen && (
                 <ul className="px-2 pb-2 flex flex-col gap-1">

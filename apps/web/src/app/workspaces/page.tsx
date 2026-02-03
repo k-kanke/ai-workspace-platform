@@ -111,18 +111,11 @@ export default function WorkspacesPage() {
     openSaved(wsId, thId);
   }, [openSaved]);
 
-  const createThreadInWorkspace = useCallback(async (wsId: number) => {
-    try {
-      const th = await createThread(wsId, null);
-      // update list cache
-      setThreadsByWs(prev => ({ ...prev, [wsId]: [th, ...(prev[wsId] || [])] }));
-      // expand and open new thread
-      setExpanded(prev => new Set(prev).add(wsId));
-      openSaved(wsId, th.id);
-    } catch (e) {
-      // noop simple failure
-    }
-  }, [openSaved]);
+  const openNewThreadModal = useCallback((wsId: number) => {
+    setNewThreadWs(wsId);
+    setNewThreadTitle("");
+    setShowNewThread(true);
+  }, []);
 
   // Do not auto-open a workspace on load; user explicitly opens via sidebar
 
@@ -145,7 +138,7 @@ export default function WorkspacesPage() {
             onToggleWs={toggleWs}
             onLoadThreads={loadThreads}
             onOpenThread={openThread}
-            onCreateThread={createThreadInWorkspace}
+            onCreateThread={openNewThreadModal}
           />
         )}
         <main className="flex-1 py-3 h-full overflow-hidden">
