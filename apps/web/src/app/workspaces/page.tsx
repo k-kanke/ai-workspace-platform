@@ -37,12 +37,6 @@ function useOpenPanes() {
   const ensureSaved = useCallback((wsId: number, thId: number) => {
     setSaved((prev) => prev.some(s => s.threadId === thId) ? prev : [...prev, { workspaceId: wsId, threadId: thId }]);
   }, []);
-  const newPane = useCallback(async () => {
-    const ws = await createWorkspace(null);
-    const th = await createThread(ws.id, null);
-    ensureSaved(ws.id, th.id);
-    addPane(ws.id, th.id);
-  }, [addPane, ensureSaved]);
   const closePane = useCallback((id: string) => {
     setPanes((prev) => {
       const closing = prev.find(p => p.id === id);
@@ -58,15 +52,17 @@ function useOpenPanes() {
   const openSaved = useCallback((wsId: number, thId: number) => {
     addPane(wsId, thId);
   }, [addPane]);
-  return { panes, saved, setPanes, setSaved, addPane, ensureSaved, newPane, closePane, focusPane, openSaved } as const;
+  return { panes, saved, setPanes, setSaved, addPane, ensureSaved, closePane, focusPane, openSaved } as const;
 }
 
 export default function WorkspacesPage() {
-  const { panes, saved, setPanes, ensureSaved, newPane, closePane, focusPane, openSaved } = useOpenPanes();
+  const { panes, saved, setPanes, addPane, ensureSaved, closePane, focusPane, openSaved } = useOpenPanes();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [threadsByWs, setThreadsByWs] = useState<Record<number, Thread[]>>({});
   const [loadingWs, setLoadingWs] = useState<Set<number>>(new Set());
+  const [showNewWorkspace, setShowNewWorkspace] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showNewThread, setShowNewThread] = useState(false);
   const [newThreadWs, setNewThreadWs] = useState<number | null>(null);
   const [newThreadTitle, setNewThreadTitle] = useState("");
@@ -95,6 +91,11 @@ export default function WorkspacesPage() {
       if (next.has(wsId)) next.delete(wsId); else next.add(wsId);
       return next;
     });
+  }, []);
+
+  const closeNewWorkspace = useCallback(() => {
+    setShowNewWorkspace(false);
+    setNewWorkspaceName("");
   }, []);
 
   const loadThreads = useCallback(async (wsId: number) => {
@@ -137,7 +138,7 @@ export default function WorkspacesPage() {
             expanded={expanded}
             threadsByWs={threadsByWs}
             loadingWs={loadingWs}
-            onNewPane={newPane}
+            onNewPane={() => setShowNewWorkspace(true)}
             onClosePane={closePane}
             onFocus={focusPane}
             onOpenSaved={openSaved}
@@ -208,6 +209,44 @@ export default function WorkspacesPage() {
                 >Create</button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {showNewWorkspace && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={closeNewWorkspace}>
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-sm font-medium mb-3">Create Workspace</div>
+            <form
+              className="flex flex-col gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  const name = newWorkspaceName.trim() || null;
+                  const ws = await createWorkspace(name);
+                  setWorkspaces(prev => [ws, ...prev.filter(w => w.id !== ws.id)]);
+                  const th = await createThread(ws.id, null);
+                  setThreadsByWs(prev => ({ ...prev, [ws.id]: [th, ...(prev[ws.id] || [])] }));
+                  setExpanded(prev => new Set(prev).add(ws.id));
+                  ensureSaved(ws.id, th.id);
+                  addPane(ws.id, th.id);
+                  closeNewWorkspace();
+                } catch {}
+              }}
+            >
+              <label className="text-xs text-zinc-600">Name (optional)</label>
+              <input
+                className="border border-zinc-200 rounded-md px-2 py-2 text-sm"
+                placeholder="e.g. Marketing"
+                value={newWorkspaceName}
+                onChange={(e) => setNewWorkspaceName(e.target.value)}
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeNewWorkspace}>Cancel</button>
+                <button className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white" type="submit">
+                  Create
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
