@@ -1,8 +1,9 @@
 # DB Schema (MVP)
 
-MVPのDBは以下の4テーブルで構成します。
+MVPのDBは以下の5テーブルで構成します。
 
 - [workspaces](workspaces.md)
+- [workspace_knowledge](workspace_knowledge.md)
 - [threads](threads.md)
 - [runs](runs.md)
 - [messages](messages.md)
@@ -10,6 +11,7 @@ MVPのDBは以下の4テーブルで構成します。
 ## Quick Overview
 
 - **workspaces**: UIの1ペイン（思考空間）を表すルート。
+- **workspace_knowledge**: ワークスペース単位のナレッジ（1:1）。
 - **threads**: ワークスペース内の会話単位（タブ＝スレッド）。
 - **runs**: スレッド内でのユーザー入力ごとの実行単位。状態遷移を持つ。
 - **messages**: user/assistant の発言ログ。スレッドに紐付く（任意で run にも紐付く）。
@@ -20,6 +22,7 @@ MVPのDBは以下の4テーブルで構成します。
 erDiagram
 
 "workspaces" ||--o{ "threads" : "FOREIGN KEY (workspace_id) REFERENCES workspaces (id)"
+"workspaces" ||--o| "workspace_knowledge" : "FOREIGN KEY (workspace_id) REFERENCES workspaces (id)"
 "threads" ||--o{ "runs" : "FOREIGN KEY (thread_id) REFERENCES threads (id)"
 "threads" ||--o{ "messages" : "FOREIGN KEY (thread_id) REFERENCES threads (id)"
 "runs" ||--o{ "messages" : "FOREIGN KEY (run_id) REFERENCES runs (id)"
@@ -27,7 +30,13 @@ erDiagram
 "workspaces" {
   serial id PK "Workspace ID"
   text name "Workspace name"
+  text system_prompt "System prompt"
   timestamptz created_at "Created at"
+}
+"workspace_knowledge" {
+  int workspace_id PK, FK "Workspace ID"
+  text content "Knowledge content"
+  timestamptz updated_at "Updated at"
 }
 "threads" {
   serial id PK "Thread ID"
