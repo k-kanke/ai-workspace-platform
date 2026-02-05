@@ -174,7 +174,7 @@ export default function WorkspacesPage() {
   return (
     <div className="h-screen overflow-hidden bg-zinc-100">
       <AppHeader onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} onNewThread={() => { setShowNewThread(true); setNewThreadWs(workspaces[0]?.id ?? null); }} />
-      <div className="mx-auto max-w-[1400px] px-4 flex gap-4 h-[calc(100vh-49px)] overflow-hidden">
+      <div className="mx-auto max-w-350 px-4 flex gap-4 h-[calc(100vh-49px)] overflow-hidden">
         {sidebarOpen && (
           <Sidebar
             panes={panes}

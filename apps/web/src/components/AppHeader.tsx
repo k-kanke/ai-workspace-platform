@@ -10,8 +10,8 @@ export default function AppHeader({
   onNewThread?: () => void;
 } = {}) {
   return (
-    <header className="w-full border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50 backdrop-blur sticky top-0 z-10">
-      <div className="mx-auto max-w-[1400px] px-4 py-3 flex items-center justify-between gap-3">
+    <header className="w-full border-b border-zinc-200 bg-linear-to-b from-white to-zinc-50 backdrop-blur sticky top-0 z-10">
+      <div className="mx-auto max-w-350 px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {onToggleSidebar && (
             <button

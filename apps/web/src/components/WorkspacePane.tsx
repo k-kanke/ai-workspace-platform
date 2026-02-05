@@ -152,7 +152,7 @@ export default function WorkspacePane({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-200 bg-gradient-to-b from-white to-zinc-50">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-200 bg-linear-to-b from-white to-zinc-50">
         <div className="font-medium">{workspaceName || `Workspace ${workspaceId ?? "-"}`}</div>
         <div className="text-sm text-zinc-500">/ {threadTitle || `Thread ${threadId ?? "-"}`}</div>
         <div className="ml-auto">{statusBadge}</div>
@@ -167,7 +167,7 @@ export default function WorkspacePane({
             const isUser = m.role === "user";
             return (
               <li key={`${m.id}`} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm shadow-sm whitespace-pre-wrap break-words ${isUser ? "bg-zinc-900 text-white rounded-br-sm" : "bg-zinc-100 text-zinc-900 rounded-bl-sm"}`}>
+                <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm shadow-sm whitespace-pre-wrap wrap-break-words ${isUser ? "bg-zinc-900 text-white rounded-br-sm" : "bg-zinc-100 text-zinc-900 rounded-bl-sm"}`}>
                   {m.content}
                 </div>
               </li>
@@ -175,7 +175,7 @@ export default function WorkspacePane({
           })}
           {assistantDraft && (
             <li className="flex justify-start">
-              <div className="max-w-[80%] px-3 py-2 rounded-2xl text-sm bg-zinc-100 text-zinc-900 rounded-bl-sm opacity-80 shadow-sm whitespace-pre-wrap break-words">
+              <div className="max-w-[80%] px-3 py-2 rounded-2xl text-sm bg-zinc-100 text-zinc-900 rounded-bl-sm opacity-80 shadow-sm whitespace-pre-wrap wrap-break-words">
                 {assistantDraft}
               </div>
             </li>

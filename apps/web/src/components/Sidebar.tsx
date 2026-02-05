@@ -45,7 +45,7 @@ export default function Sidebar({
   const handleNew = useCallback(() => { onNewPane(); }, [onNewPane]);
   const [menuOpenWs, setMenuOpenWs] = useState<number | null>(null);
   return (
-    <aside className="w-56 border-r border-zinc-200 bg-white h-[calc(100vh-49px)] sticky top-[49px] p-3 flex flex-col gap-3 shadow-sm">
+    <aside className="w-56 border-r border-zinc-200 bg-white h-[calc(100vh-49px)] sticky top-12.25 p-3 flex flex-col gap-3 shadow-sm">
       <button
         className="w-full text-sm px-3 py-2 rounded-md bg-zinc-900 hover:bg-zinc-800 text-white"
         onClick={handleNew}
