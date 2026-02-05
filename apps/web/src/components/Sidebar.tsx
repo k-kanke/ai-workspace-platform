@@ -25,6 +25,7 @@ export default function Sidebar({
   onCreateThread,
   onEditSystemPrompt,
   onEditKnowledge,
+  onOpenKnowledgeTab,
 }: {
   panes: OpenPane[];
   workspaces: Workspace[];
@@ -38,6 +39,7 @@ export default function Sidebar({
   onCreateThread: (wsId: number) => void;
   onEditSystemPrompt: (wsId: number) => void;
   onEditKnowledge: (wsId: number) => void;
+  onOpenKnowledgeTab: () => void;
 }) {
   const canOpen = panes.length < 3;
   const handleNew = useCallback(() => { onNewPane(); }, [onNewPane]);
@@ -49,6 +51,12 @@ export default function Sidebar({
         onClick={handleNew}
       >
         New Workspace
+      </button>
+      <button
+        className="w-full text-sm px-3 py-2 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800"
+        onClick={onOpenKnowledgeTab}
+      >
+        Knowledge
       </button>
       <div className="text-xs text-zinc-500 mt-1">Workspaces</div>
       <ul className="flex-1 overflow-auto pr-1 mt-1 flex flex-col gap-1">

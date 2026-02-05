@@ -70,6 +70,7 @@ export default function WorkspacesPage() {
   const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
   const [editingKnowledgeWs, setEditingKnowledgeWs] = useState<number | null>(null);
   const [knowledgeValue, setKnowledgeValue] = useState("");
+  const [showKnowledgeWorkspaceSelect, setShowKnowledgeWorkspaceSelect] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -113,6 +114,7 @@ export default function WorkspacesPage() {
     setShowKnowledgeModal(false);
     setEditingKnowledgeWs(null);
     setKnowledgeValue("");
+    setShowKnowledgeWorkspaceSelect(false);
   }, []);
 
   const loadThreads = useCallback(async (wsId: number) => {
@@ -146,12 +148,26 @@ export default function WorkspacesPage() {
   const openKnowledgeModal = useCallback(async (wsId: number) => {
     setEditingKnowledgeWs(wsId);
     setKnowledgeValue("");
+    setShowKnowledgeWorkspaceSelect(false);
     setShowKnowledgeModal(true);
     try {
       const k = await getWorkspaceKnowledge(wsId);
       setKnowledgeValue(k.content ?? "");
     } catch {}
   }, []);
+
+  const openKnowledgeTab = useCallback(async () => {
+    const wsId = workspaces[0]?.id ?? null;
+    setEditingKnowledgeWs(wsId);
+    setKnowledgeValue("");
+    setShowKnowledgeWorkspaceSelect(true);
+    setShowKnowledgeModal(true);
+    if (!wsId) return;
+    try {
+      const k = await getWorkspaceKnowledge(wsId);
+      setKnowledgeValue(k.content ?? "");
+    } catch {}
+  }, [workspaces]);
 
   // Do not auto-open a workspace on load; user explicitly opens via sidebar
 
@@ -173,6 +189,7 @@ export default function WorkspacesPage() {
             onCreateThread={openNewThreadModal}
             onEditSystemPrompt={openSystemPromptModal}
             onEditKnowledge={openKnowledgeModal}
+            onOpenKnowledgeTab={openKnowledgeTab}
           />
         )}
         <main className="flex-1 py-3 h-full overflow-hidden">
@@ -331,6 +348,32 @@ export default function WorkspacesPage() {
                 } catch {}
               }}
             >
+              {showKnowledgeWorkspaceSelect && (
+                <>
+                  <label className="text-xs text-zinc-600">Workspace</label>
+                  <select
+                    className="border border-zinc-200 rounded-md px-2 py-2 text-sm"
+                    value={editingKnowledgeWs ?? ""}
+                    onChange={async (e) => {
+                      const wsId = Number(e.target.value) || null;
+                      setEditingKnowledgeWs(wsId);
+                      setKnowledgeValue("");
+                      if (!wsId) return;
+                      try {
+                        const k = await getWorkspaceKnowledge(wsId);
+                        setKnowledgeValue(k.content ?? "");
+                      } catch {}
+                    }}
+                  >
+                    {workspaces.length === 0 && <option value="">No workspace</option>}
+                    {workspaces.map((ws) => (
+                      <option key={ws.id} value={ws.id}>
+                        {ws.name || `Workspace ${ws.id}`}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
               <textarea
                 className="border border-zinc-200 rounded-md px-2 py-2 text-sm min-h-48"
                 placeholder="Knowledge text"
