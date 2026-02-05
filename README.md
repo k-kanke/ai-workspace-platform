@@ -17,12 +17,12 @@ AIとの対話を「ワークスペース」と「スレッド」で管理し、
 ```mermaid
 flowchart LR
     U[User]
-    W[Web\nNext.js]
-    A[API\nEcho]
-    Q[Queue\nSQS/FIFO]
-    K[Worker\nRun Processor]
+    W[Web Next.js]
+    A[API Echo]
+    Q[Queue SQS/FIFO]
+    K[Worker Run Processor]
     D[(PostgreSQL)]
-    S[SSE Stream\n/runs/:id/stream]
+    S[SSE Stream /runs/:id/stream]
 
     U -->|操作/入力| W
     W -->|HTTP| A
