@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import Sidebar, { OpenPane, SavedItem } from "@/components/Sidebar";
-import { listThreadsByWorkspace, listWorkspaces, Workspace, Thread } from "@/lib/api";
+import { getWorkspaceKnowledge, listThreadsByWorkspace, listWorkspaces, updateWorkspaceKnowledge, updateWorkspaceSystemPrompt, Workspace, Thread } from "@/lib/api";
 import WorkspacePane from "@/components/WorkspacePane";
 import { createThread, createWorkspace } from "@/lib/api";
 
@@ -46,26 +46,30 @@ function useOpenPanes() {
       return prev.filter(p => p.id !== id);
     });
   }, [ensureSaved]);
-  const focusPane = useCallback((_id: string) => {
-    // MVP: no-op, panes are always visible
-  }, []);
   const openSaved = useCallback((wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => {
     addPane(wsId, thId, wsName, thTitle);
   }, [addPane]);
-  return { panes, saved, setPanes, setSaved, addPane, ensureSaved, closePane, focusPane, openSaved } as const;
+  return { panes, saved, setPanes, setSaved, addPane, ensureSaved, closePane, openSaved } as const;
 }
 
 export default function WorkspacesPage() {
-  const { panes, saved, setPanes, addPane, ensureSaved, closePane, focusPane, openSaved } = useOpenPanes();
+  const { panes, setPanes, ensureSaved, closePane, openSaved } = useOpenPanes();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [threadsByWs, setThreadsByWs] = useState<Record<number, Thread[]>>({});
   const [loadingWs, setLoadingWs] = useState<Set<number>>(new Set());
   const [showNewWorkspace, setShowNewWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [newWorkspaceSystemPrompt, setNewWorkspaceSystemPrompt] = useState("");
   const [showNewThread, setShowNewThread] = useState(false);
   const [newThreadWs, setNewThreadWs] = useState<number | null>(null);
   const [newThreadTitle, setNewThreadTitle] = useState("");
+  const [showSystemPromptModal, setShowSystemPromptModal] = useState(false);
+  const [editingSystemPromptWs, setEditingSystemPromptWs] = useState<number | null>(null);
+  const [systemPromptValue, setSystemPromptValue] = useState("");
+  const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
+  const [editingKnowledgeWs, setEditingKnowledgeWs] = useState<number | null>(null);
+  const [knowledgeValue, setKnowledgeValue] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -96,6 +100,19 @@ export default function WorkspacesPage() {
   const closeNewWorkspace = useCallback(() => {
     setShowNewWorkspace(false);
     setNewWorkspaceName("");
+    setNewWorkspaceSystemPrompt("");
+  }, []);
+
+  const closeSystemPromptModal = useCallback(() => {
+    setShowSystemPromptModal(false);
+    setEditingSystemPromptWs(null);
+    setSystemPromptValue("");
+  }, []);
+
+  const closeKnowledgeModal = useCallback(() => {
+    setShowKnowledgeModal(false);
+    setEditingKnowledgeWs(null);
+    setKnowledgeValue("");
   }, []);
 
   const loadThreads = useCallback(async (wsId: number) => {
@@ -119,6 +136,23 @@ export default function WorkspacesPage() {
     setShowNewThread(true);
   }, []);
 
+  const openSystemPromptModal = useCallback((wsId: number) => {
+    const ws = workspaces.find((w) => w.id === wsId);
+    setEditingSystemPromptWs(wsId);
+    setSystemPromptValue(ws?.system_prompt ?? "");
+    setShowSystemPromptModal(true);
+  }, [workspaces]);
+
+  const openKnowledgeModal = useCallback(async (wsId: number) => {
+    setEditingKnowledgeWs(wsId);
+    setKnowledgeValue("");
+    setShowKnowledgeModal(true);
+    try {
+      const k = await getWorkspaceKnowledge(wsId);
+      setKnowledgeValue(k.content ?? "");
+    } catch {}
+  }, []);
+
   // Do not auto-open a workspace on load; user explicitly opens via sidebar
 
   return (
@@ -128,19 +162,17 @@ export default function WorkspacesPage() {
         {sidebarOpen && (
           <Sidebar
             panes={panes}
-            saved={saved}
             workspaces={workspaces}
             expanded={expanded}
             threadsByWs={threadsByWs}
             loadingWs={loadingWs}
             onNewPane={() => setShowNewWorkspace(true)}
-            onClosePane={closePane}
-            onFocus={focusPane}
-            onOpenSaved={openSaved}
             onToggleWs={toggleWs}
             onLoadThreads={loadThreads}
             onOpenThread={openThread}
             onCreateThread={openNewThreadModal}
+            onEditSystemPrompt={openSystemPromptModal}
+            onEditKnowledge={openKnowledgeModal}
           />
         )}
         <main className="flex-1 py-3 h-full overflow-hidden">
@@ -220,7 +252,8 @@ export default function WorkspacesPage() {
                 e.preventDefault();
                 try {
                   const name = newWorkspaceName.trim() || null;
-                  const ws = await createWorkspace(name);
+                  const systemPrompt = newWorkspaceSystemPrompt.trim() || null;
+                  const ws = await createWorkspace(name, systemPrompt);
                   setWorkspaces(prev => [ws, ...prev.filter(w => w.id !== ws.id)]);
                   setThreadsByWs(prev => ({ ...prev, [ws.id]: prev[ws.id] || [] }));
                   setExpanded(prev => new Set(prev).add(ws.id));
@@ -235,11 +268,78 @@ export default function WorkspacesPage() {
                 value={newWorkspaceName}
                 onChange={(e) => setNewWorkspaceName(e.target.value)}
               />
+              <label className="text-xs text-zinc-600">System prompt (optional)</label>
+              <textarea
+                className="border border-zinc-200 rounded-md px-2 py-2 text-sm min-h-32"
+                placeholder="e.g. You are a helpful assistant..."
+                value={newWorkspaceSystemPrompt}
+                onChange={(e) => setNewWorkspaceSystemPrompt(e.target.value)}
+              />
               <div className="flex justify-end gap-2 pt-2">
                 <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeNewWorkspace}>Cancel</button>
                 <button className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white" type="submit">
                   Create
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showSystemPromptModal && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={closeSystemPromptModal}>
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-lg p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-sm font-medium mb-3">Edit System Prompt</div>
+            <form
+              className="flex flex-col gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!editingSystemPromptWs) return;
+                try {
+                  const next = systemPromptValue.trim();
+                  const ws = await updateWorkspaceSystemPrompt(editingSystemPromptWs, next ? next : null);
+                  setWorkspaces((prev) => prev.map((w) => (w.id === ws.id ? { ...w, system_prompt: ws.system_prompt ?? null } : w)));
+                  closeSystemPromptModal();
+                } catch {}
+              }}
+            >
+              <textarea
+                className="border border-zinc-200 rounded-md px-2 py-2 text-sm min-h-40"
+                placeholder="System prompt"
+                value={systemPromptValue}
+                onChange={(e) => setSystemPromptValue(e.target.value)}
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeSystemPromptModal}>Cancel</button>
+                <button className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white" type="submit">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showKnowledgeModal && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={closeKnowledgeModal}>
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-lg p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-sm font-medium mb-3">Knowledge</div>
+            <form
+              className="flex flex-col gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!editingKnowledgeWs) return;
+                try {
+                  await updateWorkspaceKnowledge(editingKnowledgeWs, knowledgeValue);
+                  closeKnowledgeModal();
+                } catch {}
+              }}
+            >
+              <textarea
+                className="border border-zinc-200 rounded-md px-2 py-2 text-sm min-h-48"
+                placeholder="Knowledge text"
+                value={knowledgeValue}
+                onChange={(e) => setKnowledgeValue(e.target.value)}
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeKnowledgeModal}>Cancel</button>
+                <button className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white" type="submit">Save</button>
               </div>
             </form>
           </div>

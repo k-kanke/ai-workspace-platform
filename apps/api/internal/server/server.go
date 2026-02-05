@@ -45,11 +45,11 @@ func Run() error {
     e.HideBanner = true
     e.Use(middleware.Recover())
 
-    e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-        AllowOrigins: []string{"*"},
-        AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
-        AllowHeaders: []string{"Content-Type", "Authorization"},
-    }))
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodOptions},
+		AllowHeaders: []string{"Content-Type", "Authorization"},
+	}))
 
     hub := stream.NewHub()
     notify.StartAssistantMessageListener(ctx, pool, hub)

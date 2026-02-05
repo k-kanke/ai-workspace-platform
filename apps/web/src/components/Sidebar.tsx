@@ -14,34 +14,30 @@ export type SavedItem = { workspaceId: number; threadId: number; title?: string 
 
 export default function Sidebar({
   panes,
-  saved,
   workspaces,
   expanded,
   threadsByWs,
   loadingWs,
   onNewPane,
-  onClosePane,
-  onFocus,
-  onOpenSaved,
   onToggleWs,
   onLoadThreads,
   onOpenThread,
   onCreateThread,
+  onEditSystemPrompt,
+  onEditKnowledge,
 }: {
   panes: OpenPane[];
-  saved: SavedItem[];
   workspaces: Workspace[];
   expanded: Set<number>;
   threadsByWs: Record<number, Thread[]>;
   loadingWs: Set<number>;
   onNewPane: () => void;
-  onClosePane: (id: string) => void;
-  onFocus: (id: string) => void;
-  onOpenSaved: (wsId: number, thId: number) => void;
   onToggleWs: (wsId: number) => void;
   onLoadThreads: (wsId: number) => void;
   onOpenThread: (wsId: number, thId: number) => void;
   onCreateThread: (wsId: number) => void;
+  onEditSystemPrompt: (wsId: number) => void;
+  onEditKnowledge: (wsId: number) => void;
 }) {
   const canOpen = panes.length < 3;
   const handleNew = useCallback(() => { onNewPane(); }, [onNewPane]);
@@ -92,7 +88,7 @@ export default function Sidebar({
                 </div>
                 {menuOpenWs === ws.id && (
                   <div
-                    className="absolute right-2 top-10 z-20 w-36 rounded-md border border-zinc-200 bg-white shadow-lg"
+                    className="absolute right-2 top-10 z-20 w-44 rounded-md border border-zinc-200 bg-white shadow-lg"
                     role="menu"
                   >
                     <button
@@ -105,6 +101,28 @@ export default function Sidebar({
                       }}
                     >
                       New thread
+                    </button>
+                    <button
+                      className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50 border-t border-zinc-100"
+                      role="menuitem"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpenWs(null);
+                        onEditSystemPrompt(ws.id);
+                      }}
+                    >
+                      Edit system prompt
+                    </button>
+                    <button
+                      className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50 border-t border-zinc-100"
+                      role="menuitem"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpenWs(null);
+                        onEditKnowledge(ws.id);
+                      }}
+                    >
+                      Knowledge
                     </button>
                   </div>
                 )}
