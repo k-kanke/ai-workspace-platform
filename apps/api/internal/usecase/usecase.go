@@ -46,10 +46,8 @@ func normalizeOptionalText(v *string) *string {
 }
 
 func (u *Usecase) CreateWorkspace(ctx context.Context, name *string, systemPrompt *string) (*domain.Workspace, error) {
-	// Ensure non-empty name as DB requires NOT NULL
 	if name == nil || strings.TrimSpace(*name) == "" {
 		n := "Workspace"
-		// add a simple suffix to avoid all identical names if desired
 		ts := time.Now().Format("20060102-150405")
 		composed := n + " " + ts
 		name = &composed
