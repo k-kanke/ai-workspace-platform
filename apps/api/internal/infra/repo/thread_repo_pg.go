@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"ai-workspace-platform/api/internal/domain"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -72,4 +73,15 @@ func (r *ThreadRepoPG) UpdateTitle(ctx context.Context, id int64, title *string)
 		return nil, err
 	}
 	return &t, nil
+}
+
+func (r *ThreadRepoPG) Delete(ctx context.Context, id int64) error {
+	cmd, err := r.DB.Exec(ctx, `DELETE FROM threads WHERE id=$1`, id)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }

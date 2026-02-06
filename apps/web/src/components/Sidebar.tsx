@@ -29,6 +29,7 @@ export default function Sidebar({
   onRenameWorkspace,
   onRenameThread,
   onDeleteWorkspace,
+  onDeleteThread,
 }: {
   panes: OpenPane[];
   workspaces: Workspace[];
@@ -46,10 +47,12 @@ export default function Sidebar({
   onRenameWorkspace: (wsId: number) => void;
   onRenameThread: (wsId: number, thId: number) => void;
   onDeleteWorkspace: (wsId: number) => void;
+  onDeleteThread: (wsId: number, thId: number) => void;
 }) {
   const canOpen = panes.length < 3;
   const handleNew = useCallback(() => { onNewPane(); }, [onNewPane]);
   const [menuOpenWs, setMenuOpenWs] = useState<number | null>(null);
+  const [menuOpenThread, setMenuOpenThread] = useState<number | null>(null);
   return (
     <aside className="w-56 border-r border-zinc-200 bg-white h-[calc(100vh-49px)] sticky top-12.25 p-3 flex flex-col gap-3 shadow-sm">
       <button
@@ -170,7 +173,7 @@ export default function Sidebar({
                     <li className="text-[11px] text-zinc-400 px-2 py-1">No threads</li>
                   )}
                   {!loading && threads.map(th => (
-                    <li key={`th-${th.id}`}>
+                    <li key={`th-${th.id}`} className="relative">
                       <div className="flex items-center gap-2">
                         <button
                           className={`flex-1 text-left text-xs px-2 py-1 rounded hover:bg-zinc-50 ${canOpen ? '' : 'cursor-not-allowed opacity-60'}`}
@@ -181,12 +184,46 @@ export default function Sidebar({
                         </button>
                         <button
                           className="text-[10px] px-1.5 py-1 rounded border border-zinc-200 hover:bg-zinc-50"
-                          onClick={() => onRenameThread(ws.id, th.id)}
-                          title="Rename thread"
+                          aria-haspopup="menu"
+                          aria-expanded={menuOpenThread === th.id}
+                          title="Thread actions"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenThread((prev) => (prev === th.id ? null : th.id));
+                          }}
                         >
-                          Rename
+                          •••
                         </button>
                       </div>
+                      {menuOpenThread === th.id && (
+                        <div
+                          className="absolute right-2 top-7 z-20 w-36 rounded-md border border-zinc-200 bg-white shadow-lg"
+                          role="menu"
+                        >
+                          <button
+                            className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50"
+                            role="menuitem"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuOpenThread(null);
+                              onRenameThread(ws.id, th.id);
+                            }}
+                          >
+                            Rename
+                          </button>
+                          <button
+                            className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50 border-t border-zinc-100 text-red-600"
+                            role="menuitem"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuOpenThread(null);
+                              onDeleteThread(ws.id, th.id);
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

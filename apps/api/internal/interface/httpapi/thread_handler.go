@@ -82,3 +82,17 @@ func (h *ThreadHandler) UpdateTitle(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, t)
 }
+
+func (h *ThreadHandler) Delete(c echo.Context) error {
+	threadID, err := usecase.ParseID(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid thread id"})
+	}
+	if err := h.U.DeleteThread(c.Request().Context(), threadID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "thread not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.NoContent(http.StatusNoContent)
+}

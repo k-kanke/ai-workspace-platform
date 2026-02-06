@@ -34,6 +34,7 @@ type ThreadRepository interface {
 	Get(ctx context.Context, id int64) (*Thread, error)
 	ListByWorkspace(ctx context.Context, workspaceID int64, limit, offset int) ([]*Thread, error)
 	UpdateTitle(ctx context.Context, id int64, title *string) (*Thread, error)
+	Delete(ctx context.Context, id int64) error
 }
 
 type MessageRepository interface {

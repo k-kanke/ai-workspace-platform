@@ -123,6 +123,10 @@ export async function updateThreadTitle(threadId: number, title: string): Promis
   });
 }
 
+export async function deleteThread(threadId: number): Promise<void> {
+  await http<void>(`/threads/${threadId}`, { method: "DELETE" });
+}
+
 export async function listMessages(threadId: number): Promise<Message[]> {
   return http<Message[]>(`/threads/${threadId}/messages`);
 }

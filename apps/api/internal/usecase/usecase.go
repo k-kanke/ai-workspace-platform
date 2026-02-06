@@ -133,6 +133,10 @@ func (u *Usecase) UpdateThreadTitle(ctx context.Context, threadID int64, title *
 	return u.Threads.UpdateTitle(ctx, threadID, normalized)
 }
 
+func (u *Usecase) DeleteThread(ctx context.Context, threadID int64) error {
+	return u.Threads.Delete(ctx, threadID)
+}
+
 func (u *Usecase) ListThreadsByWorkspace(ctx context.Context, wsID int64, limit, offset int) ([]*domain.Thread, error) {
 	return u.Threads.ListByWorkspace(ctx, wsID, limit, offset)
 }

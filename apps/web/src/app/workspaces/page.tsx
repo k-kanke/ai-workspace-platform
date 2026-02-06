@@ -6,6 +6,7 @@ import Sidebar, { OpenPane, SavedItem } from "@/components/Sidebar";
 import {
   createKnowledge,
   deleteWorkspace,
+  deleteThread,
   linkWorkspaceKnowledge,
   listKnowledge,
   listThreadsByWorkspace,
@@ -99,6 +100,9 @@ export default function WorkspacesPage() {
   const [renameThreadValue, setRenameThreadValue] = useState("");
   const [showDeleteWorkspaceModal, setShowDeleteWorkspaceModal] = useState(false);
   const [deleteWorkspaceId, setDeleteWorkspaceId] = useState<number | null>(null);
+  const [showDeleteThreadModal, setShowDeleteThreadModal] = useState(false);
+  const [deleteThreadId, setDeleteThreadId] = useState<number | null>(null);
+  const [deleteThreadWsId, setDeleteThreadWsId] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -162,6 +166,12 @@ export default function WorkspacesPage() {
   const closeDeleteWorkspaceModal = useCallback(() => {
     setShowDeleteWorkspaceModal(false);
     setDeleteWorkspaceId(null);
+  }, []);
+
+  const closeDeleteThreadModal = useCallback(() => {
+    setShowDeleteThreadModal(false);
+    setDeleteThreadId(null);
+    setDeleteThreadWsId(null);
   }, []);
 
   const loadThreads = useCallback(async (wsId: number) => {
@@ -250,6 +260,12 @@ export default function WorkspacesPage() {
     setDeleteWorkspaceId(wsId);
     setShowDeleteWorkspaceModal(true);
   }, []);
+
+  const openDeleteThread = useCallback((wsId: number, thId: number) => {
+    setDeleteThreadWsId(wsId);
+    setDeleteThreadId(thId);
+    setShowDeleteThreadModal(true);
+  }, []);
   // Do not auto-open a workspace on load; user explicitly opens via sidebar
 
   return (
@@ -274,6 +290,7 @@ export default function WorkspacesPage() {
             onRenameWorkspace={openRenameWorkspace}
             onRenameThread={openRenameThread}
             onDeleteWorkspace={openDeleteWorkspace}
+            onDeleteThread={openDeleteThread}
           />
         )}
         <main className="flex-1 py-3 h-full overflow-hidden">
@@ -667,6 +684,44 @@ export default function WorkspacesPage() {
                     setWorkspaces(prevWorkspaces);
                     setThreadsByWs(prevThreadsByWs);
                     setExpanded(prevExpanded);
+                    setPanes(prevPanes);
+                  }
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteThreadModal && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={closeDeleteThreadModal}>
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-sm font-medium mb-3 text-red-600">Delete Thread</div>
+            <div className="text-sm text-zinc-700">
+              スレッドを削除してもよろしいでしょうか？
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeDeleteThreadModal}>Cancel</button>
+              <button
+                className="px-3 py-1.5 text-sm rounded-md bg-red-600 text-white"
+                type="button"
+                onClick={async () => {
+                  if (!deleteThreadId || !deleteThreadWsId) return;
+                  const thId = deleteThreadId;
+                  const wsId = deleteThreadWsId;
+                  const prevThreadsByWs = threadsByWs;
+                  const prevPanes = panes;
+                  closeDeleteThreadModal();
+                  setThreadsByWs((prev) => ({
+                    ...prev,
+                    [wsId]: (prev[wsId] || []).filter((t) => t.id !== thId),
+                  }));
+                  setPanes((prev) => prev.filter((p) => p.threadId !== thId));
+                  try {
+                    await deleteThread(thId);
+                  } catch {
+                    setThreadsByWs(prevThreadsByWs);
                     setPanes(prevPanes);
                   }
                 }}
