@@ -206,7 +206,7 @@ export default function ChatPage() {
           onClick={onSend}
           disabled={!threadId || !input.trim() || initializing}
         >
-          送信
+          Send
         </button>
       </div>
 

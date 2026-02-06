@@ -203,7 +203,7 @@ export default function WorkspacePane({
           onClick={onSend}
           disabled={!threadId || !input.trim() || initializing || !!pendingRun}
         >
-          送信
+          Send
         </button>
       </div>
     </div>
