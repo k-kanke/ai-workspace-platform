@@ -19,6 +19,7 @@ type ThreadRepository interface {
 	Create(ctx context.Context, workspaceID int64, title *string) (*Thread, error)
 	Get(ctx context.Context, id int64) (*Thread, error)
 	ListByWorkspace(ctx context.Context, workspaceID int64, limit, offset int) ([]*Thread, error)
+	UpdateTitle(ctx context.Context, id int64, title *string) (*Thread, error)
 }
 
 type MessageRepository interface {

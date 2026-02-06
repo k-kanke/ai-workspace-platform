@@ -26,6 +26,7 @@ func RegisterRoutes(e *echo.Echo, u *usecase.Usecase, hub *stream.Hub) {
 	e.PUT("/workspaces/:id/name", wh.UpdateName)
 	e.POST("/threads", th.Create)
 	e.GET("/threads", th.ListByWorkspace)
+	e.PUT("/threads/:id/title", th.UpdateTitle)
 	e.GET("/threads/:id/messages", mh.ListByThread)
 	e.POST("/threads/:id/messages", mh.PostAndEnqueue)
 	e.POST("/threads/:id/runs", rh.Create)

@@ -24,6 +24,7 @@ type Usecase struct {
 }
 
 var ErrInvalidName = errors.New("invalid name")
+var ErrInvalidTitle = errors.New("invalid title")
 
 func New(db *pgxpool.Pool, pub queue.Publisher) *Usecase {
 	return &Usecase{
@@ -83,6 +84,14 @@ func (u *Usecase) UpdateWorkspaceName(ctx context.Context, workspaceID int64, na
 		return nil, ErrInvalidName
 	}
 	return u.Workspace.UpdateName(ctx, workspaceID, normalized)
+}
+
+func (u *Usecase) UpdateThreadTitle(ctx context.Context, threadID int64, title *string) (*domain.Thread, error) {
+	normalized := normalizeOptionalText(title)
+	if normalized == nil {
+		return nil, ErrInvalidTitle
+	}
+	return u.Threads.UpdateTitle(ctx, threadID, normalized)
 }
 
 func (u *Usecase) ListThreadsByWorkspace(ctx context.Context, wsID int64, limit, offset int) ([]*domain.Thread, error) {
