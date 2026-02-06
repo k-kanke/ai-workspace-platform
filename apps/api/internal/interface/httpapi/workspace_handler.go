@@ -25,6 +25,10 @@ type upsertKnowledgeReq struct {
 	Content string `json:"content"`
 }
 
+type upsertNameReq struct {
+	Name *string `json:"name"`
+}
+
 type knowledgeResp struct {
 	WorkspaceID int64   `json:"workspace_id"`
 	Content     *string `json:"content"`
@@ -123,4 +127,26 @@ func (h *WorkspaceHandler) UpsertKnowledge(c echo.Context) error {
 		Content:     &content,
 		UpdatedAt:   &updated,
 	})
+}
+
+func (h *WorkspaceHandler) UpdateName(c echo.Context) error {
+	id, err := usecase.ParseID(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid workspace id"})
+	}
+	var req upsertNameReq
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
+	}
+	w, err := h.U.UpdateWorkspaceName(c.Request().Context(), id, req.Name)
+	if err != nil {
+		if errors.Is(err, usecase.ErrInvalidName) {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid name"})
+		}
+		if errors.Is(err, pgx.ErrNoRows) {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "workspace not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, w)
 }

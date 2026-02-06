@@ -23,6 +23,8 @@ type Usecase struct {
 	Publisher queue.Publisher
 }
 
+var ErrInvalidName = errors.New("invalid name")
+
 func New(db *pgxpool.Pool, pub queue.Publisher) *Usecase {
 	return &Usecase{
 		Workspace: repopg.NewWorkspaceRepoPG(db),
@@ -73,6 +75,14 @@ func (u *Usecase) GetWorkspaceKnowledge(ctx context.Context, workspaceID int64) 
 
 func (u *Usecase) UpsertWorkspaceKnowledge(ctx context.Context, workspaceID int64, content string) (*domain.WorkspaceKnowledge, error) {
 	return u.Knowledge.Upsert(ctx, workspaceID, content)
+}
+
+func (u *Usecase) UpdateWorkspaceName(ctx context.Context, workspaceID int64, name *string) (*domain.Workspace, error) {
+	normalized := normalizeOptionalText(name)
+	if normalized == nil {
+		return nil, ErrInvalidName
+	}
+	return u.Workspace.UpdateName(ctx, workspaceID, normalized)
 }
 
 func (u *Usecase) ListThreadsByWorkspace(ctx context.Context, wsID int64, limit, offset int) ([]*domain.Thread, error) {

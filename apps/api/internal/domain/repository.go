@@ -7,6 +7,7 @@ type WorkspaceRepository interface {
 	Get(ctx context.Context, id int64) (*Workspace, error)
 	List(ctx context.Context, limit, offset int) ([]*Workspace, error)
 	UpdateSystemPrompt(ctx context.Context, id int64, systemPrompt *string) (*Workspace, error)
+	UpdateName(ctx context.Context, id int64, name *string) (*Workspace, error)
 }
 
 type WorkspaceKnowledgeRepository interface {

@@ -70,3 +70,15 @@ func (r *WorkspaceRepoPG) UpdateSystemPrompt(ctx context.Context, id int64, syst
 	}
 	return &w, nil
 }
+
+func (r *WorkspaceRepoPG) UpdateName(ctx context.Context, id int64, name *string) (*domain.Workspace, error) {
+	var w domain.Workspace
+	err := r.DB.QueryRow(ctx,
+		`UPDATE workspaces SET name=$2 WHERE id=$1 RETURNING id, name, system_prompt, created_at`,
+		id, name,
+	).Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &w, nil
+}

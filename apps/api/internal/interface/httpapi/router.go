@@ -23,6 +23,7 @@ func RegisterRoutes(e *echo.Echo, u *usecase.Usecase, hub *stream.Hub) {
 	e.PUT("/workspaces/:id/system_prompt", wh.UpdateSystemPrompt)
 	e.GET("/workspaces/:id/knowledge", wh.GetKnowledge)
 	e.PUT("/workspaces/:id/knowledge", wh.UpsertKnowledge)
+	e.PUT("/workspaces/:id/name", wh.UpdateName)
 	e.POST("/threads", th.Create)
 	e.GET("/threads", th.ListByWorkspace)
 	e.GET("/threads/:id/messages", mh.ListByThread)
