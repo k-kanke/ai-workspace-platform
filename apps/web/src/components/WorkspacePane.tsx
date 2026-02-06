@@ -168,7 +168,7 @@ export default function WorkspacePane({
       </div>
       <div className="flex-1 p-4 overflow-y-auto bg-white">
         {messages.length === 0 && !assistantDraft && (
-          <div className="text-sm text-zinc-500">メッセージはまだありません。</div>
+          <div className="text-sm text-zinc-500">No messages yet</div>
         )}
         <ul className="flex flex-col gap-3">
           {messages.map((m) => {
@@ -193,7 +193,7 @@ export default function WorkspacePane({
       <div className="border-t border-zinc-200 px-3 py-2 bg-white flex gap-2 items-end">
         <textarea
           className="flex-1 border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 resize-none"
-          placeholder="..."
+          placeholder="message"
           rows={1}
           value={input}
           onChange={(e) => setInput(e.target.value)}

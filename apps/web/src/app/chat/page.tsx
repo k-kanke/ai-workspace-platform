@@ -173,7 +173,7 @@ export default function ChatPage() {
 
       <div className="border rounded p-3 min-h-40 bg-white">
         {messages.length === 0 && (
-          <div className="text-sm text-zinc-500">メッセージはまだありません。</div>
+          <div className="text-sm text-zinc-500">No messages yet</div>
         )}
         <ul className="flex flex-col gap-2">
           {messages.map((m) => (

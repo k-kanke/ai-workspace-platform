@@ -22,6 +22,9 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
     try { err = await res.json(); } catch { /* noop */ }
     throw new Error(err?.error || `HTTP ${res.status}`);
   }
+  if (res.status === 204) {
+    return undefined as T;
+  }
   return res.json();
 }
 

@@ -643,22 +643,32 @@ export default function WorkspacesPage() {
                 type="button"
                 onClick={async () => {
                   if (!deleteWorkspaceId) return;
+                  const wsId = deleteWorkspaceId;
+                  const prevWorkspaces = workspaces;
+                  const prevThreadsByWs = threadsByWs;
+                  const prevExpanded = expanded;
+                  const prevPanes = panes;
+                  closeDeleteWorkspaceModal();
+                  setWorkspaces((prev) => prev.filter((w) => w.id !== wsId));
+                  setThreadsByWs((prev) => {
+                    const next = { ...prev };
+                    delete next[wsId];
+                    return next;
+                  });
+                  setExpanded((prev) => {
+                    const next = new Set(prev);
+                    next.delete(wsId);
+                    return next;
+                  });
+                  setPanes((prev) => prev.filter((p) => p.workspaceId !== wsId));
                   try {
-                    await deleteWorkspace(deleteWorkspaceId);
-                    setWorkspaces((prev) => prev.filter((w) => w.id !== deleteWorkspaceId));
-                    setThreadsByWs((prev) => {
-                      const next = { ...prev };
-                      delete next[deleteWorkspaceId];
-                      return next;
-                    });
-                    setExpanded((prev) => {
-                      const next = new Set(prev);
-                      next.delete(deleteWorkspaceId);
-                      return next;
-                    });
-                    setPanes((prev) => prev.filter((p) => p.workspaceId !== deleteWorkspaceId));
-                    closeDeleteWorkspaceModal();
-                  } catch {}
+                    await deleteWorkspace(wsId);
+                  } catch {
+                    setWorkspaces(prevWorkspaces);
+                    setThreadsByWs(prevThreadsByWs);
+                    setExpanded(prevExpanded);
+                    setPanes(prevPanes);
+                  }
                 }}
               >
                 Delete
