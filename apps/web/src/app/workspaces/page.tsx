@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import Sidebar, { OpenPane, SavedItem } from "@/components/Sidebar";
-import { getWorkspaceKnowledge, listThreadsByWorkspace, listWorkspaces, updateThreadTitle, updateWorkspaceKnowledge, updateWorkspaceName, updateWorkspaceSystemPrompt, Workspace, Thread } from "@/lib/api";
+import { deleteWorkspace, getWorkspaceKnowledge, listThreadsByWorkspace, listWorkspaces, updateThreadTitle, updateWorkspaceKnowledge, updateWorkspaceName, updateWorkspaceSystemPrompt, Workspace, Thread } from "@/lib/api";
 import WorkspacePane from "@/components/WorkspacePane";
 import { createThread, createWorkspace } from "@/lib/api";
 
@@ -78,6 +78,8 @@ export default function WorkspacesPage() {
   const [renameThreadId, setRenameThreadId] = useState<number | null>(null);
   const [renameThreadWsId, setRenameThreadWsId] = useState<number | null>(null);
   const [renameThreadValue, setRenameThreadValue] = useState("");
+  const [showDeleteWorkspaceModal, setShowDeleteWorkspaceModal] = useState(false);
+  const [deleteWorkspaceId, setDeleteWorkspaceId] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -135,6 +137,11 @@ export default function WorkspacesPage() {
     setRenameThreadId(null);
     setRenameThreadWsId(null);
     setRenameThreadValue("");
+  }, []);
+
+  const closeDeleteWorkspaceModal = useCallback(() => {
+    setShowDeleteWorkspaceModal(false);
+    setDeleteWorkspaceId(null);
   }, []);
 
   const loadThreads = useCallback(async (wsId: number) => {
@@ -204,6 +211,10 @@ export default function WorkspacesPage() {
     setShowRenameThreadModal(true);
   }, [threadsByWs]);
 
+  const openDeleteWorkspace = useCallback((wsId: number) => {
+    setDeleteWorkspaceId(wsId);
+    setShowDeleteWorkspaceModal(true);
+  }, []);
   // Do not auto-open a workspace on load; user explicitly opens via sidebar
 
   return (
@@ -227,6 +238,7 @@ export default function WorkspacesPage() {
             onOpenKnowledgeTab={openKnowledgeTab}
             onRenameWorkspace={openRenameWorkspace}
             onRenameThread={openRenameThread}
+            onDeleteWorkspace={openDeleteWorkspace}
           />
         )}
         <main className="flex-1 py-3 h-full overflow-hidden">
@@ -497,6 +509,44 @@ export default function WorkspacesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {showDeleteWorkspaceModal && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={closeDeleteWorkspaceModal}>
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-sm font-medium mb-3 text-red-600">Delete Workspace</div>
+            <div className="text-sm text-zinc-700">
+              ワークスペースを削除したらワークスペース内のスレッドも全て消えます。それでもよろしいでしょうか？
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeDeleteWorkspaceModal}>Cancel</button>
+              <button
+                className="px-3 py-1.5 text-sm rounded-md bg-red-600 text-white"
+                type="button"
+                onClick={async () => {
+                  if (!deleteWorkspaceId) return;
+                  try {
+                    await deleteWorkspace(deleteWorkspaceId);
+                    setWorkspaces((prev) => prev.filter((w) => w.id !== deleteWorkspaceId));
+                    setThreadsByWs((prev) => {
+                      const next = { ...prev };
+                      delete next[deleteWorkspaceId];
+                      return next;
+                    });
+                    setExpanded((prev) => {
+                      const next = new Set(prev);
+                      next.delete(deleteWorkspaceId);
+                      return next;
+                    });
+                    setPanes((prev) => prev.filter((p) => p.workspaceId !== deleteWorkspaceId));
+                    closeDeleteWorkspaceModal();
+                  } catch {}
+                }}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

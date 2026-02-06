@@ -56,6 +56,12 @@ export async function updateWorkspaceName(workspaceId: number, name: string): Pr
   });
 }
 
+export async function deleteWorkspace(workspaceId: number): Promise<void> {
+  await http<void>(`/workspaces/${workspaceId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getWorkspaceKnowledge(workspaceId: number): Promise<WorkspaceKnowledge> {
   return http<WorkspaceKnowledge>(`/workspaces/${workspaceId}/knowledge`);
 }

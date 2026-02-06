@@ -28,6 +28,7 @@ export default function Sidebar({
   onOpenKnowledgeTab,
   onRenameWorkspace,
   onRenameThread,
+  onDeleteWorkspace,
 }: {
   panes: OpenPane[];
   workspaces: Workspace[];
@@ -44,6 +45,7 @@ export default function Sidebar({
   onOpenKnowledgeTab: () => void;
   onRenameWorkspace: (wsId: number) => void;
   onRenameThread: (wsId: number, thId: number) => void;
+  onDeleteWorkspace: (wsId: number) => void;
 }) {
   const canOpen = panes.length < 3;
   const handleNew = useCallback(() => { onNewPane(); }, [onNewPane]);
@@ -146,6 +148,17 @@ export default function Sidebar({
                       }}
                     >
                       Knowledge
+                    </button>
+                    <button
+                      className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50 border-t border-zinc-100 text-red-600"
+                      role="menuitem"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpenWs(null);
+                        onDeleteWorkspace(ws.id);
+                      }}
+                    >
+                      Delete
                     </button>
                   </div>
                 )}
