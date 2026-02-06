@@ -26,6 +26,8 @@ export default function Sidebar({
   onEditSystemPrompt,
   onEditKnowledge,
   onOpenKnowledgeTab,
+  onRenameWorkspace,
+  onRenameThread,
 }: {
   panes: OpenPane[];
   workspaces: Workspace[];
@@ -40,6 +42,8 @@ export default function Sidebar({
   onEditSystemPrompt: (wsId: number) => void;
   onEditKnowledge: (wsId: number) => void;
   onOpenKnowledgeTab: () => void;
+  onRenameWorkspace: (wsId: number) => void;
+  onRenameThread: (wsId: number, thId: number) => void;
 }) {
   const canOpen = panes.length < 3;
   const handleNew = useCallback(() => { onNewPane(); }, [onNewPane]);
@@ -116,6 +120,17 @@ export default function Sidebar({
                       onClick={(e) => {
                         e.stopPropagation();
                         setMenuOpenWs(null);
+                        onRenameWorkspace(ws.id);
+                      }}
+                    >
+                      Rename
+                    </button>
+                    <button
+                      className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50 border-t border-zinc-100"
+                      role="menuitem"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpenWs(null);
                         onEditSystemPrompt(ws.id);
                       }}
                     >
@@ -143,13 +158,22 @@ export default function Sidebar({
                   )}
                   {!loading && threads.map(th => (
                     <li key={`th-${th.id}`}>
-                      <button
-                        className={`w-full text-left text-xs px-2 py-1 rounded hover:bg-zinc-50 ${canOpen ? '' : 'cursor-not-allowed opacity-60'}`}
-                        onClick={() => { if (canOpen) onOpenThread(ws.id, th.id); }}
-                        title={canOpen ? 'Open thread' : 'Maximum 3 panes open'}
-                      >
-                        TH {th.id} {th.title ? `- ${th.title}` : ''}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className={`flex-1 text-left text-xs px-2 py-1 rounded hover:bg-zinc-50 ${canOpen ? '' : 'cursor-not-allowed opacity-60'}`}
+                          onClick={() => { if (canOpen) onOpenThread(ws.id, th.id); }}
+                          title={canOpen ? 'Open thread' : 'Maximum 3 panes open'}
+                        >
+                          TH {th.id} {th.title ? `- ${th.title}` : ''}
+                        </button>
+                        <button
+                          className="text-[10px] px-1.5 py-1 rounded border border-zinc-200 hover:bg-zinc-50"
+                          onClick={() => onRenameThread(ws.id, th.id)}
+                          title="Rename thread"
+                        >
+                          Rename
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>

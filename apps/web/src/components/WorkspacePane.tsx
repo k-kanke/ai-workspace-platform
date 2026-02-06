@@ -60,6 +60,14 @@ export default function WorkspacePane({
   }, []);
 
   useEffect(() => {
+    setWorkspaceName(initialWorkspaceName ?? null);
+  }, [initialWorkspaceName]);
+
+  useEffect(() => {
+    setThreadTitle(initialThreadTitle ?? null);
+  }, [initialThreadTitle]);
+
+  useEffect(() => {
     let cancelled = false;
     async function load() {
       if (!threadId) return;

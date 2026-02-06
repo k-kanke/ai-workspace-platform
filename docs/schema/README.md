@@ -1,9 +1,10 @@
 # DB Schema (MVP)
 
-MVPのDBは以下の5テーブルで構成します。
+MVPのDBは以下の6テーブルで構成します。
 
 - [workspaces](workspaces.md)
-- [workspace_knowledge](workspace_knowledge.md)
+- [knowledge](knowledge.md)
+- [workspace_knowledge_links](workspace_knowledge_links.md)
 - [threads](threads.md)
 - [runs](runs.md)
 - [messages](messages.md)
@@ -11,7 +12,8 @@ MVPのDBは以下の5テーブルで構成します。
 ## Quick Overview
 
 - **workspaces**: UIの1ペイン（思考空間）を表すルート。
-- **workspace_knowledge**: ワークスペース単位のナレッジ（1:1）。
+- **knowledge**: ナレッジ本文の実体（独立）。
+- **workspace_knowledge_links**: ワークスペースとナレッジの紐付け（多対多）。
 - **threads**: ワークスペース内の会話単位（タブ＝スレッド）。
 - **runs**: スレッド内でのユーザー入力ごとの実行単位。状態遷移を持つ。
 - **messages**: user/assistant の発言ログ。スレッドに紐付く（任意で run にも紐付く）。
@@ -22,7 +24,8 @@ MVPのDBは以下の5テーブルで構成します。
 erDiagram
 
 "workspaces" ||--o{ "threads" : "FOREIGN KEY (workspace_id) REFERENCES workspaces (id)"
-"workspaces" ||--o| "workspace_knowledge" : "FOREIGN KEY (workspace_id) REFERENCES workspaces (id)"
+"workspaces" ||--o{ "workspace_knowledge_links" : "FOREIGN KEY (workspace_id) REFERENCES workspaces (id)"
+"knowledge" ||--o{ "workspace_knowledge_links" : "FOREIGN KEY (knowledge_id) REFERENCES knowledge (id)"
 "threads" ||--o{ "runs" : "FOREIGN KEY (thread_id) REFERENCES threads (id)"
 "threads" ||--o{ "messages" : "FOREIGN KEY (thread_id) REFERENCES threads (id)"
 "runs" ||--o{ "messages" : "FOREIGN KEY (run_id) REFERENCES runs (id)"
@@ -33,10 +36,16 @@ erDiagram
   text system_prompt "System prompt"
   timestamptz created_at "Created at"
 }
-"workspace_knowledge" {
-  int workspace_id PK, FK "Workspace ID"
+"knowledge" {
+  serial id PK "Knowledge ID"
   text content "Knowledge content"
+  timestamptz created_at "Created at"
   timestamptz updated_at "Updated at"
+}
+"workspace_knowledge_links" {
+  int workspace_id PK, FK "Workspace ID"
+  int knowledge_id PK, FK "Knowledge ID"
+  timestamptz created_at "Created at"
 }
 "threads" {
   serial id PK "Thread ID"
@@ -65,5 +74,5 @@ erDiagram
 
 - `runs.status` は `queued / running / succeeded / failed / cancelled`
 - `messages.run_id` は Run 未紐付けの履歴がある可能性に備えて nullable
-- 並列度は thread 単位（同一 thread 内は直列推奨）
-- MVPではシンプル優先。将来的に `agents / knowledge / files` など追加予定
+- 並列度は thread 単位（同一 thread 内は直列）
+- 将来的に `agents / knowledge / files` など追加予定

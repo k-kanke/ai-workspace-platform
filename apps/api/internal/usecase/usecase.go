@@ -86,6 +86,10 @@ func (u *Usecase) UpdateWorkspaceName(ctx context.Context, workspaceID int64, na
 	return u.Workspace.UpdateName(ctx, workspaceID, normalized)
 }
 
+func (u *Usecase) DeleteWorkspace(ctx context.Context, workspaceID int64) error {
+	return u.Workspace.Delete(ctx, workspaceID)
+}
+
 func (u *Usecase) UpdateThreadTitle(ctx context.Context, threadID int64, title *string) (*domain.Thread, error) {
 	normalized := normalizeOptionalText(title)
 	if normalized == nil {

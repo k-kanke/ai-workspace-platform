@@ -49,6 +49,13 @@ export async function updateWorkspaceSystemPrompt(workspaceId: number, systemPro
   });
 }
 
+export async function updateWorkspaceName(workspaceId: number, name: string): Promise<Workspace> {
+  return http<Workspace>(`/workspaces/${workspaceId}/name`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
 export async function getWorkspaceKnowledge(workspaceId: number): Promise<WorkspaceKnowledge> {
   return http<WorkspaceKnowledge>(`/workspaces/${workspaceId}/knowledge`);
 }
@@ -62,6 +69,13 @@ export async function updateWorkspaceKnowledge(workspaceId: number, content: str
 
 export async function listThreadsByWorkspace(workspaceId: number, limit = 50, offset = 0): Promise<Thread[]> {
   return http<Thread[]>(`/threads?workspace_id=${workspaceId}&limit=${limit}&offset=${offset}`);
+}
+
+export async function updateThreadTitle(threadId: number, title: string): Promise<Thread> {
+  return http<Thread>(`/threads/${threadId}/title`, {
+    method: "PUT",
+    body: JSON.stringify({ title }),
+  });
 }
 
 export async function listMessages(threadId: number): Promise<Message[]> {

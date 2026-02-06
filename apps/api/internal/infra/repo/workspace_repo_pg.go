@@ -4,6 +4,7 @@ import (
 	"ai-workspace-platform/api/internal/domain"
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -81,4 +82,15 @@ func (r *WorkspaceRepoPG) UpdateName(ctx context.Context, id int64, name *string
 		return nil, err
 	}
 	return &w, nil
+}
+
+func (r *WorkspaceRepoPG) Delete(ctx context.Context, id int64) error {
+	cmd, err := r.DB.Exec(ctx, `DELETE FROM workspaces WHERE id=$1`, id)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }

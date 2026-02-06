@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import Sidebar, { OpenPane, SavedItem } from "@/components/Sidebar";
-import { getWorkspaceKnowledge, listThreadsByWorkspace, listWorkspaces, updateWorkspaceKnowledge, updateWorkspaceSystemPrompt, Workspace, Thread } from "@/lib/api";
+import { getWorkspaceKnowledge, listThreadsByWorkspace, listWorkspaces, updateThreadTitle, updateWorkspaceKnowledge, updateWorkspaceName, updateWorkspaceSystemPrompt, Workspace, Thread } from "@/lib/api";
 import WorkspacePane from "@/components/WorkspacePane";
 import { createThread, createWorkspace } from "@/lib/api";
 
@@ -71,6 +71,13 @@ export default function WorkspacesPage() {
   const [editingKnowledgeWs, setEditingKnowledgeWs] = useState<number | null>(null);
   const [knowledgeValue, setKnowledgeValue] = useState("");
   const [showKnowledgeWorkspaceSelect, setShowKnowledgeWorkspaceSelect] = useState(false);
+  const [showRenameWorkspaceModal, setShowRenameWorkspaceModal] = useState(false);
+  const [renameWorkspaceId, setRenameWorkspaceId] = useState<number | null>(null);
+  const [renameWorkspaceValue, setRenameWorkspaceValue] = useState("");
+  const [showRenameThreadModal, setShowRenameThreadModal] = useState(false);
+  const [renameThreadId, setRenameThreadId] = useState<number | null>(null);
+  const [renameThreadWsId, setRenameThreadWsId] = useState<number | null>(null);
+  const [renameThreadValue, setRenameThreadValue] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -115,6 +122,19 @@ export default function WorkspacesPage() {
     setEditingKnowledgeWs(null);
     setKnowledgeValue("");
     setShowKnowledgeWorkspaceSelect(false);
+  }, []);
+
+  const closeRenameWorkspaceModal = useCallback(() => {
+    setShowRenameWorkspaceModal(false);
+    setRenameWorkspaceId(null);
+    setRenameWorkspaceValue("");
+  }, []);
+
+  const closeRenameThreadModal = useCallback(() => {
+    setShowRenameThreadModal(false);
+    setRenameThreadId(null);
+    setRenameThreadWsId(null);
+    setRenameThreadValue("");
   }, []);
 
   const loadThreads = useCallback(async (wsId: number) => {
@@ -169,6 +189,21 @@ export default function WorkspacesPage() {
     } catch {}
   }, [workspaces]);
 
+  const openRenameWorkspace = useCallback((wsId: number) => {
+    const ws = workspaces.find((w) => w.id === wsId);
+    setRenameWorkspaceId(wsId);
+    setRenameWorkspaceValue(ws?.name ?? "");
+    setShowRenameWorkspaceModal(true);
+  }, [workspaces]);
+
+  const openRenameThread = useCallback((wsId: number, thId: number) => {
+    const t = (threadsByWs[wsId] || []).find((th) => th.id === thId);
+    setRenameThreadId(thId);
+    setRenameThreadWsId(wsId);
+    setRenameThreadValue(t?.title ?? "");
+    setShowRenameThreadModal(true);
+  }, [threadsByWs]);
+
   // Do not auto-open a workspace on load; user explicitly opens via sidebar
 
   return (
@@ -190,6 +225,8 @@ export default function WorkspacesPage() {
             onEditSystemPrompt={openSystemPromptModal}
             onEditKnowledge={openKnowledgeModal}
             onOpenKnowledgeTab={openKnowledgeTab}
+            onRenameWorkspace={openRenameWorkspace}
+            onRenameThread={openRenameThread}
           />
         )}
         <main className="flex-1 py-3 h-full overflow-hidden">
@@ -383,6 +420,81 @@ export default function WorkspacesPage() {
               <div className="flex justify-end gap-2 pt-2">
                 <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeKnowledgeModal}>Cancel</button>
                 <button className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white" type="submit">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showRenameWorkspaceModal && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={closeRenameWorkspaceModal}>
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-sm font-medium mb-3">Rename Workspace</div>
+            <form
+              className="flex flex-col gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!renameWorkspaceId) return;
+                const next = renameWorkspaceValue.trim();
+                if (!next) return;
+                try {
+                  const ws = await updateWorkspaceName(renameWorkspaceId, next);
+                  setWorkspaces((prev) => prev.map((w) => (w.id === ws.id ? { ...w, name: ws.name ?? null } : w)));
+                  setPanes((prev) => prev.map((p) => (p.workspaceId === ws.id ? { ...p, workspaceName: ws.name ?? null } : p)));
+                  closeRenameWorkspaceModal();
+                } catch {}
+              }}
+            >
+              <label className="text-xs text-zinc-600">Name</label>
+              <input
+                className="border border-zinc-200 rounded-md px-2 py-2 text-sm"
+                placeholder="e.g. Marketing"
+                value={renameWorkspaceValue}
+                onChange={(e) => setRenameWorkspaceValue(e.target.value)}
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeRenameWorkspaceModal}>Cancel</button>
+                <button className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white" type="submit" disabled={!renameWorkspaceValue.trim()}>
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showRenameThreadModal && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={closeRenameThreadModal}>
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-sm font-medium mb-3">Rename Thread</div>
+            <form
+              className="flex flex-col gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!renameThreadId || !renameThreadWsId) return;
+                const next = renameThreadValue.trim();
+                if (!next) return;
+                try {
+                  const th = await updateThreadTitle(renameThreadId, next);
+                  setThreadsByWs((prev) => ({
+                    ...prev,
+                    [renameThreadWsId]: (prev[renameThreadWsId] || []).map((t) => (t.id === th.id ? { ...t, title: th.title ?? null } : t)),
+                  }));
+                  setPanes((prev) => prev.map((p) => (p.threadId === th.id ? { ...p, threadTitle: th.title ?? null } : p)));
+                  closeRenameThreadModal();
+                } catch {}
+              }}
+            >
+              <label className="text-xs text-zinc-600">Title</label>
+              <input
+                className="border border-zinc-200 rounded-md px-2 py-2 text-sm"
+                placeholder="e.g. Investigation"
+                value={renameThreadValue}
+                onChange={(e) => setRenameThreadValue(e.target.value)}
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeRenameThreadModal}>Cancel</button>
+                <button className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white" type="submit" disabled={!renameThreadValue.trim()}>
+                  Save
+                </button>
               </div>
             </form>
           </div>

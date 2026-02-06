@@ -31,6 +31,7 @@ type upsertNameReq struct {
 
 type knowledgeResp struct {
 	WorkspaceID int64   `json:"workspace_id"`
+	KnowledgeID *int64  `json:"knowledge_id,omitempty"`
 	Content     *string `json:"content"`
 	UpdatedAt   *string `json:"updated_at"`
 }
@@ -96,12 +97,13 @@ func (h *WorkspaceHandler) GetKnowledge(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	if k == nil {
-		return c.JSON(http.StatusOK, knowledgeResp{WorkspaceID: id, Content: nil, UpdatedAt: nil})
+		return c.JSON(http.StatusOK, knowledgeResp{WorkspaceID: id, KnowledgeID: nil, Content: nil, UpdatedAt: nil})
 	}
 	updated := k.UpdatedAt.Format("2006-01-02T15:04:05Z07:00")
 	content := k.Content
 	return c.JSON(http.StatusOK, knowledgeResp{
 		WorkspaceID: k.WorkspaceID,
+		KnowledgeID: &k.KnowledgeID,
 		Content:     &content,
 		UpdatedAt:   &updated,
 	})
@@ -124,6 +126,7 @@ func (h *WorkspaceHandler) UpsertKnowledge(c echo.Context) error {
 	content := k.Content
 	return c.JSON(http.StatusOK, knowledgeResp{
 		WorkspaceID: k.WorkspaceID,
+		KnowledgeID: &k.KnowledgeID,
 		Content:     &content,
 		UpdatedAt:   &updated,
 	})
@@ -149,4 +152,19 @@ func (h *WorkspaceHandler) UpdateName(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, w)
+}
+
+func (h *WorkspaceHandler) Delete(c echo.Context) error {
+	id, err := usecase.ParseID(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid workspace id"})
+	}
+	err = h.U.DeleteWorkspace(c.Request().Context(), id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "workspace not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.NoContent(http.StatusNoContent)
 }
