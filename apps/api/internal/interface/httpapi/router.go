@@ -17,6 +17,8 @@ func RegisterRoutes(e *echo.Echo, u *usecase.Usecase, hub *stream.Hub) {
 	th := &ThreadHandler{U: u}
 	mh := &MessageHandler{U: u}
 	rh := &RunHandler{U: u, Hub: hub}
+	kh := &KnowledgeHandler{U: u}
+	wkh := &WorkspaceKnowledgeLinkHandler{U: u}
 
 	e.POST("/workspace", wh.Create)
 	e.GET("/workspaces", wh.List)
@@ -33,4 +35,10 @@ func RegisterRoutes(e *echo.Echo, u *usecase.Usecase, hub *stream.Hub) {
 	e.POST("/threads/:id/runs", rh.Create)
 	e.GET("/runs/:id", rh.Get)
 	e.GET("/runs/:id/stream", rh.Stream)
+	e.GET("/knowledge", kh.List)
+	e.POST("/knowledge", kh.Create)
+	e.PUT("/knowledge/:id", kh.Update)
+	e.GET("/workspaces/:id/knowledge_links", wkh.ListByWorkspace)
+	e.POST("/workspaces/:id/knowledge_links", wkh.Link)
+	e.DELETE("/workspaces/:id/knowledge_links/:knowledge_id", wkh.Unlink)
 }

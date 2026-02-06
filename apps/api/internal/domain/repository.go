@@ -16,6 +16,19 @@ type WorkspaceKnowledgeRepository interface {
 	Upsert(ctx context.Context, workspaceID int64, content string) (*WorkspaceKnowledge, error)
 }
 
+type KnowledgeRepository interface {
+	Create(ctx context.Context, content string) (*Knowledge, error)
+	Get(ctx context.Context, id int64) (*Knowledge, error)
+	List(ctx context.Context, limit, offset int) ([]*Knowledge, error)
+	Update(ctx context.Context, id int64, content string) (*Knowledge, error)
+}
+
+type WorkspaceKnowledgeLinkRepository interface {
+	ListByWorkspace(ctx context.Context, workspaceID int64) ([]*Knowledge, error)
+	Link(ctx context.Context, workspaceID, knowledgeID int64) error
+	Unlink(ctx context.Context, workspaceID, knowledgeID int64) error
+}
+
 type ThreadRepository interface {
 	Create(ctx context.Context, workspaceID int64, title *string) (*Thread, error)
 	Get(ctx context.Context, id int64) (*Thread, error)

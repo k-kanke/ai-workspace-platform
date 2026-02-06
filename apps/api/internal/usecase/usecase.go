@@ -17,6 +17,8 @@ import (
 type Usecase struct {
 	Workspace domain.WorkspaceRepository
 	Knowledge domain.WorkspaceKnowledgeRepository
+	KBase     domain.KnowledgeRepository
+	WKLinks   domain.WorkspaceKnowledgeLinkRepository
 	Threads   domain.ThreadRepository
 	Messages  domain.MessageRepository
 	Runs      domain.RunRepository
@@ -25,11 +27,14 @@ type Usecase struct {
 
 var ErrInvalidName = errors.New("invalid name")
 var ErrInvalidTitle = errors.New("invalid title")
+var ErrInvalidContent = errors.New("invalid content")
 
 func New(db *pgxpool.Pool, pub queue.Publisher) *Usecase {
 	return &Usecase{
 		Workspace: repopg.NewWorkspaceRepoPG(db),
 		Knowledge: repopg.NewWorkspaceKnowledgeRepoPG(db),
+		KBase:     repopg.NewKnowledgeRepoPG(db),
+		WKLinks:   repopg.NewWorkspaceKnowledgeLinkRepoPG(db),
 		Threads:   repopg.NewThreadRepoPG(db),
 		Messages:  repopg.NewMessageRepoPG(db),
 		Runs:      repopg.NewRunRepoPG(db),
@@ -76,6 +81,36 @@ func (u *Usecase) GetWorkspaceKnowledge(ctx context.Context, workspaceID int64) 
 
 func (u *Usecase) UpsertWorkspaceKnowledge(ctx context.Context, workspaceID int64, content string) (*domain.WorkspaceKnowledge, error) {
 	return u.Knowledge.Upsert(ctx, workspaceID, content)
+}
+
+func (u *Usecase) ListKnowledge(ctx context.Context, limit, offset int) ([]*domain.Knowledge, error) {
+	return u.KBase.List(ctx, limit, offset)
+}
+
+func (u *Usecase) CreateKnowledge(ctx context.Context, content string) (*domain.Knowledge, error) {
+	if strings.TrimSpace(content) == "" {
+		return nil, ErrInvalidContent
+	}
+	return u.KBase.Create(ctx, content)
+}
+
+func (u *Usecase) UpdateKnowledge(ctx context.Context, knowledgeID int64, content string) (*domain.Knowledge, error) {
+	if strings.TrimSpace(content) == "" {
+		return nil, ErrInvalidContent
+	}
+	return u.KBase.Update(ctx, knowledgeID, content)
+}
+
+func (u *Usecase) ListWorkspaceKnowledgeLinks(ctx context.Context, workspaceID int64) ([]*domain.Knowledge, error) {
+	return u.WKLinks.ListByWorkspace(ctx, workspaceID)
+}
+
+func (u *Usecase) LinkWorkspaceKnowledge(ctx context.Context, workspaceID, knowledgeID int64) error {
+	return u.WKLinks.Link(ctx, workspaceID, knowledgeID)
+}
+
+func (u *Usecase) UnlinkWorkspaceKnowledge(ctx context.Context, workspaceID, knowledgeID int64) error {
+	return u.WKLinks.Unlink(ctx, workspaceID, knowledgeID)
 }
 
 func (u *Usecase) UpdateWorkspaceName(ctx context.Context, workspaceID int64, name *string) (*domain.Workspace, error) {
