@@ -5,7 +5,7 @@ export type Thread = { id: number; workspace_id: number; title?: string | null; 
 export type Message = { id: number; thread_id: number; role: "user" | "assistant"; content: string; created_at: string };
 export type RunStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
 export type Run = { id: number; thread_id: number; status: RunStatus; created_at?: string; updated_at?: string };
-export type WorkspaceKnowledge = { workspace_id: number; content: string | null; updated_at: string | null };
+export type WorkspaceKnowledge = { workspace_id: number; knowledge_id?: number | null; content: string | null; updated_at: string | null };
 export type Knowledge = { id: number; name: string; content: string; created_at?: string; updated_at?: string };
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {

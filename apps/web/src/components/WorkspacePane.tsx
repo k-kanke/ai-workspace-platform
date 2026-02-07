@@ -13,6 +13,10 @@ export default function WorkspacePane({
   initialThreadTitle,
   onReady,
   onClose,
+  onEditSystemPrompt,
+  onOpenKnowledge,
+  onRenameWorkspace,
+  onDeleteWorkspace,
 }: {
   initialWorkspaceId?: number;
   initialThreadId?: number;
@@ -20,6 +24,10 @@ export default function WorkspacePane({
   initialThreadTitle?: string | null;
   onReady: (wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => void;
   onClose: () => void;
+  onEditSystemPrompt?: (wsId: number) => void;
+  onOpenKnowledge?: (wsId: number) => void;
+  onRenameWorkspace?: (wsId: number) => void;
+  onDeleteWorkspace?: (wsId: number) => void;
 }) {
   const [workspaceId, setWorkspaceId] = useState<number | null>(initialWorkspaceId ?? null);
   const [threadId, setThreadId] = useState<number | null>(initialThreadId ?? null);
@@ -33,6 +41,7 @@ export default function WorkspacePane({
   const esRef = useRef<EventSource | null>(null);
   const [assistantDraft, setAssistantDraft] = useState<string>("");
   const taRef = useRef<HTMLTextAreaElement | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -168,13 +177,81 @@ export default function WorkspacePane({
   }, [pendingRun?.status]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative flex flex-col h-full group">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-200 bg-linear-to-b from-white to-zinc-50">
         <div className="font-medium">{workspaceName || `Workspace ${workspaceId ?? "-"}`}</div>
         <div className="text-sm text-zinc-500">/ {threadTitle || `Thread ${threadId ?? "-"}`}</div>
         <div className="ml-auto">{statusBadge}</div>
-        <button className="ml-2 text-sm text-zinc-500 hover:text-red-600" onClick={onClose}>×</button>
+        <div className="relative">
+          <button
+            className="ml-0 text-3xl leading-none text-zinc-500 hover:text-zinc-800"
+            onClick={() => setSettingsOpen((v) => !v)}
+            title="Settings"
+            aria-label="Settings"
+          >
+            ⚙
+          </button>
+          {settingsOpen && (
+            <div
+              className="absolute right-0 top-8 z-20 w-44 rounded-md border border-zinc-200 bg-white shadow-lg"
+              role="menu"
+            >
+              <button
+                className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50"
+                role="menuitem"
+                onClick={() => {
+                  if (!workspaceId) return;
+                  setSettingsOpen(false);
+                  onEditSystemPrompt?.(workspaceId);
+                }}
+              >
+                Edit system prompt
+              </button>
+              <button
+                className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50 border-t border-zinc-100"
+                role="menuitem"
+                onClick={() => {
+                  if (!workspaceId) return;
+                  setSettingsOpen(false);
+                  onOpenKnowledge?.(workspaceId);
+                }}
+              >
+                Knowledge
+              </button>
+              <button
+                className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50 border-t border-zinc-100"
+                role="menuitem"
+                onClick={() => {
+                  if (!workspaceId) return;
+                  setSettingsOpen(false);
+                  onRenameWorkspace?.(workspaceId);
+                }}
+              >
+                Rename workspace
+              </button>
+              <button
+                className="w-full text-left text-xs px-3 py-2 hover:bg-zinc-50 border-t border-zinc-100 text-red-600"
+                role="menuitem"
+                onClick={() => {
+                  if (!workspaceId) return;
+                  setSettingsOpen(false);
+                  onDeleteWorkspace?.(workspaceId);
+                }}
+              >
+                Delete workspace
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+      <button
+        className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-white border border-zinc-200 text-sm text-zinc-500 hover:text-red-600 hover:border-red-300 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+        onClick={onClose}
+        title="Close"
+        aria-label="Close"
+      >
+        ×
+      </button>
       <div className="flex-1 p-4 overflow-y-auto bg-white">
         {messages.length === 0 && !assistantDraft && (
           <div className="text-sm text-zinc-500">No messages yet</div>

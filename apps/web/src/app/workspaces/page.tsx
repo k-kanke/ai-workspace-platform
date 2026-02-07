@@ -7,6 +7,9 @@ import {
   createKnowledge,
   deleteWorkspace,
   deleteThread,
+  getWorkspaceKnowledge,
+  linkWorkspaceKnowledge,
+  unlinkWorkspaceKnowledge,
   listKnowledge,
   listThreadsByWorkspace,
   listWorkspaces,
@@ -115,6 +118,8 @@ export default function WorkspacesPage() {
   const [knowledgeNameValue, setKnowledgeNameValue] = useState("");
   const [knowledgeEditorValue, setKnowledgeEditorValue] = useState("");
   const [knowledgeEditMode, setKnowledgeEditMode] = useState(false);
+  const [knowledgeContextWsId, setKnowledgeContextWsId] = useState<number | null>(null);
+  const [knowledgeCurrentId, setKnowledgeCurrentId] = useState<number | null>(null);
   const [showRenameWorkspaceModal, setShowRenameWorkspaceModal] = useState(false);
   const [renameWorkspaceId, setRenameWorkspaceId] = useState<number | null>(null);
   const [renameWorkspaceValue, setRenameWorkspaceValue] = useState("");
@@ -173,6 +178,8 @@ export default function WorkspacesPage() {
     setKnowledgeNameValue("");
     setKnowledgeEditorValue("");
     setKnowledgeEditMode(false);
+    setKnowledgeContextWsId(null);
+    setKnowledgeCurrentId(null);
   }, []);
 
   const closeRenameWorkspaceModal = useCallback(() => {
@@ -240,6 +247,8 @@ export default function WorkspacesPage() {
     setKnowledgeNameValue("");
     setKnowledgeEditorValue("");
     setKnowledgeEditMode(false);
+    setKnowledgeContextWsId(null);
+    setKnowledgeCurrentId(null);
     setShowKnowledgeModal(true);
     await loadKnowledgeList();
   }, [loadKnowledgeList]);
@@ -249,9 +258,38 @@ export default function WorkspacesPage() {
     setKnowledgeNameValue("");
     setKnowledgeEditorValue("");
     setKnowledgeEditMode(false);
+    setKnowledgeContextWsId(null);
+    setKnowledgeCurrentId(null);
     setShowKnowledgeModal(true);
     await loadKnowledgeList();
   }, [loadKnowledgeList]);
+
+  const openWorkspaceKnowledge = useCallback(async (wsId: number) => {
+    setKnowledgeSelectedId(null);
+    setKnowledgeNameValue("");
+    setKnowledgeEditorValue("");
+    setKnowledgeEditMode(false);
+    setKnowledgeContextWsId(wsId);
+    setKnowledgeCurrentId(null);
+    setShowKnowledgeModal(true);
+    await loadKnowledgeList();
+    try {
+      const k = await getWorkspaceKnowledge(wsId);
+      setKnowledgeCurrentId(k.knowledge_id ?? null);
+    } catch {}
+  }, [loadKnowledgeList]);
+
+  useEffect(() => {
+    if (!knowledgeContextWsId) return;
+    if (!knowledgeCurrentId) return;
+    if (knowledgeSelectedId) return;
+    const current = knowledgeList.find((x) => x.id === knowledgeCurrentId);
+    if (current) {
+      setKnowledgeSelectedId(current.id);
+      setKnowledgeNameValue(current.name ?? "");
+      setKnowledgeEditorValue(current.content ?? "");
+    }
+  }, [knowledgeContextWsId, knowledgeCurrentId, knowledgeList, knowledgeSelectedId]);
 
   const openRenameWorkspace = useCallback((wsId: number) => {
     const ws = workspaces.find((w) => w.id === wsId);
@@ -302,7 +340,7 @@ export default function WorkspacesPage() {
             onOpenThread={openThread}
             onCreateThread={openNewThreadModal}
             onEditSystemPrompt={openSystemPromptModal}
-            onEditKnowledge={() => openKnowledgeModal()}
+            onEditKnowledge={(wsId) => { openWorkspaceKnowledge(wsId); }}
             onOpenKnowledgeTab={openKnowledgeTab}
             onNewThread={() => { setShowNewThread(true); setNewThreadWs(workspaces[0]?.id ?? null); }}
             onRenameWorkspace={openRenameWorkspace}
@@ -344,7 +382,7 @@ export default function WorkspacesPage() {
           )}
           <div className={`grid gap-4 ${gridCols} flex-1 min-h-0`}>
             {(panes.length ? panes : [null, null, null]).slice(0, 3).map((p, idx) => (
-              <div key={p ? `${p.id}-${p.threadId}` : `placeholder-${idx}`} className="border border-zinc-200 rounded-lg bg-white h-full overflow-hidden shadow-sm min-h-0">
+              <div key={p ? `${p.id}-${p.threadId}` : `placeholder-${idx}`} className="border border-zinc-200 rounded-lg bg-white h-full overflow-visible shadow-sm min-h-0 relative">
                 {p ? (
                   <WorkspacePane
                     initialWorkspaceId={p.workspaceId}
@@ -353,6 +391,10 @@ export default function WorkspacesPage() {
                     initialThreadTitle={p.threadTitle}
                     onReady={(ws, th, wsName, thTitle) => onPaneReady(idx, ws, th, wsName, thTitle)}
                     onClose={() => closePane(p.id)}
+                    onEditSystemPrompt={openSystemPromptModal}
+                    onOpenKnowledge={openWorkspaceKnowledge}
+                    onRenameWorkspace={openRenameWorkspace}
+                    onDeleteWorkspace={openDeleteWorkspace}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center text-zinc-400 text-sm">Empty</div>
@@ -507,10 +549,11 @@ export default function WorkspacesPage() {
                   <ul className="flex flex-col gap-1">
                     {knowledgeList.map((k) => {
                       const active = knowledgeSelectedId === k.id;
+                      const current = knowledgeCurrentId === k.id;
                       return (
                         <li key={`k-${k.id}`}>
                           <button
-                            className={`w-full text-left text-xs px-2 py-1 rounded hover:bg-zinc-50 ${active ? "bg-zinc-100" : ""}`}
+                            className={`w-full text-left text-xs px-2 py-1 rounded hover:bg-zinc-50 ${active ? "bg-zinc-100 ring-1 ring-zinc-300" : ""}`}
                             onClick={() => {
                               setKnowledgeSelectedId(k.id);
                               setKnowledgeNameValue(k.name ?? "");
@@ -520,6 +563,11 @@ export default function WorkspacesPage() {
                           >
                             <div className="flex items-center justify-between gap-2">
                               <span className="truncate">{k.name}</span>
+                              {current && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                                  Set
+                                </span>
+                              )}
                             </div>
                             <div className="text-[10px] text-zinc-500 truncate">
                               {k.content.slice(0, 30) || "No content"}
@@ -536,19 +584,40 @@ export default function WorkspacesPage() {
                 <div className="col-span-2 h-full min-h-0">
                   <div className="flex flex-col gap-2 h-full min-h-0">
                     <div className="flex items-center justify-between">
-                      <div className="text-xs text-zinc-500">Details</div>
+                      <div className="text-xs text-zinc-500">
+                        {knowledgeContextWsId ? "Workspace Knowledge" : "Details"}
+                      </div>
                       {knowledgeEditMode && (
                         <div className="text-[11px] px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700">
                           Editing
                         </div>
                       )}
-                      <button
-                        className="text-xs px-2 py-1 rounded border border-zinc-200 hover:bg-zinc-50 disabled:opacity-50"
-                        onClick={() => setKnowledgeEditMode(true)}
-                        disabled={!knowledgeSelectedId || knowledgeEditMode}
-                      >
-                        {knowledgeEditMode ? "Editing" : "Edit"}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {knowledgeContextWsId && knowledgeSelectedId && knowledgeSelectedId !== knowledgeCurrentId && !knowledgeEditMode && (
+                          <button
+                            className="text-xs px-3 py-1.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+                            onClick={async () => {
+                              if (!knowledgeContextWsId || !knowledgeSelectedId) return;
+                              try {
+                                if (knowledgeCurrentId && knowledgeCurrentId !== knowledgeSelectedId) {
+                                  await unlinkWorkspaceKnowledge(knowledgeContextWsId, knowledgeCurrentId);
+                                }
+                                await linkWorkspaceKnowledge(knowledgeContextWsId, knowledgeSelectedId);
+                                setKnowledgeCurrentId(knowledgeSelectedId);
+                              } catch {}
+                            }}
+                          >
+                            Set as Workspace Knowledge
+                          </button>
+                        )}
+                        <button
+                          className={`text-xs px-3 py-1.5 rounded-md border ${knowledgeEditMode ? "border-amber-300 bg-amber-50 text-amber-700" : "border-zinc-200 hover:bg-zinc-50"} disabled:opacity-50`}
+                          onClick={() => setKnowledgeEditMode(true)}
+                          disabled={!knowledgeSelectedId || knowledgeEditMode}
+                        >
+                          {knowledgeEditMode ? "Editing" : "Edit"}
+                        </button>
+                      </div>
                     </div>
                     <label className="text-xs text-zinc-600">Name</label>
                     <input
