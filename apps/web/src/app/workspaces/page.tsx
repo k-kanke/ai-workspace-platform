@@ -283,7 +283,7 @@ export default function WorkspacesPage() {
 
   return (
     <div className="h-screen overflow-hidden bg-zinc-100">
-      <AppHeader onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} onNewThread={() => { setShowNewThread(true); setNewThreadWs(workspaces[0]?.id ?? null); }} />
+      <AppHeader onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
       <div className="mx-auto max-w-350 px-4 flex gap-4 h-[calc(100vh-49px)] overflow-hidden">
         {sidebarOpen && (
           <Sidebar
@@ -300,6 +300,7 @@ export default function WorkspacesPage() {
             onEditSystemPrompt={openSystemPromptModal}
             onEditKnowledge={() => openKnowledgeModal()}
             onOpenKnowledgeTab={openKnowledgeTab}
+            onNewThread={() => { setShowNewThread(true); setNewThreadWs(workspaces[0]?.id ?? null); }}
             onRenameWorkspace={openRenameWorkspace}
             onRenameThread={openRenameThread}
             onDeleteWorkspace={openDeleteWorkspace}

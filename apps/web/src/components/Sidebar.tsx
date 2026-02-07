@@ -27,6 +27,7 @@ export default function Sidebar({
   onEditSystemPrompt,
   onEditKnowledge,
   onOpenKnowledgeTab,
+  onNewThread,
   onRenameWorkspace,
   onRenameThread,
   onDeleteWorkspace,
@@ -45,6 +46,7 @@ export default function Sidebar({
   onEditSystemPrompt: (wsId: number) => void;
   onEditKnowledge: (wsId: number) => void;
   onOpenKnowledgeTab: () => void;
+  onNewThread: () => void;
   onRenameWorkspace: (wsId: number) => void;
   onRenameThread: (wsId: number, thId: number) => void;
   onDeleteWorkspace: (wsId: number) => void;
@@ -60,6 +62,12 @@ export default function Sidebar({
         onClick={handleNew}
       >
         New Workspace
+      </button>
+      <button
+        className="w-full text-sm px-3 py-2 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800"
+        onClick={onNewThread}
+      >
+        New Thread
       </button>
       <button
         className="w-full text-sm px-3 py-2 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800"

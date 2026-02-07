@@ -3,11 +3,9 @@
 export default function AppHeader({
   onToggleSidebar,
   sidebarOpen,
-  onNewThread,
 }: {
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
-  onNewThread?: () => void;
 } = {}) {
   return (
     <header className="w-full border-b border-zinc-200 bg-linear-to-b from-white to-zinc-50 backdrop-blur sticky top-0 z-10">
@@ -26,12 +24,6 @@ export default function AppHeader({
           <div className="font-semibold tracking-tight">AI Workspace Platform</div>
         </div>
         <div className="flex items-center gap-2">
-          {onNewThread && (
-            <button
-              className="text-sm px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-100"
-              onClick={onNewThread}
-            >New Thread</button>
-          )}
           <div className="text-xs text-zinc-500">MVP</div>
         </div>
       </div>
