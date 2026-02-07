@@ -40,8 +40,9 @@ func main() {
 	runRepo := repo.NewRunRepoPG(pool)
 	msgRepo := repo.NewMessageRepoPG(pool)
 	ctxRepo := repo.NewContextRepoPG(pool)
+	streamRepo := repo.NewStreamRepoPG(pool)
 	llmClient := llm.NewOpenAIClient(apiKey, model)
-	processor := workerpkg.NewRunProcessor(runRepo, msgRepo, ctxRepo, llmClient)
+	processor := workerpkg.NewRunProcessor(runRepo, msgRepo, ctxRepo, streamRepo, llmClient)
 
 	if err := workerpkg.Consume(ctx, q, processor); err != nil {
 		log.Printf("worker stopped with error: %v", err)

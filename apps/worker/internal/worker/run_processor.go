@@ -14,11 +14,12 @@ type RunProcessor struct {
 	Runs     *repo.RunRepoPG
 	Messages *repo.MessageRepoPG
 	Context  *repo.ContextRepoPG
+	Stream   *repo.StreamRepoPG
 	LLM      llm.Client
 }
 
-func NewRunProcessor(r *repo.RunRepoPG, m *repo.MessageRepoPG, c *repo.ContextRepoPG, l llm.Client) *RunProcessor {
-	return &RunProcessor{Runs: r, Messages: m, Context: c, LLM: l}
+func NewRunProcessor(r *repo.RunRepoPG, m *repo.MessageRepoPG, c *repo.ContextRepoPG, s *repo.StreamRepoPG, l llm.Client) *RunProcessor {
+	return &RunProcessor{Runs: r, Messages: m, Context: c, Stream: s, LLM: l}
 }
 
 func (p *RunProcessor) ProcessRun(ctx context.Context, runID, threadID int64) error {
@@ -35,7 +36,7 @@ func (p *RunProcessor) ProcessRun(ctx context.Context, runID, threadID int64) er
 		return nil
 	}
 
-	if p.Context == nil || p.Messages == nil || p.LLM == nil {
+	if p.Context == nil || p.Messages == nil || p.LLM == nil || p.Stream == nil {
 		_ = p.failRun(ctx, runID, threadID, fmt.Errorf("missing dependencies"))
 		return fmt.Errorf("missing dependencies")
 	}
@@ -80,7 +81,9 @@ func (p *RunProcessor) ProcessRun(ctx context.Context, runID, threadID int64) er
 		msgs = append(msgs, llm.ChatMessage{Role: role, Content: m.Content})
 	}
 
-	reply, err := p.LLM.Generate(ctx, msgs)
+	reply, err := p.LLM.Stream(ctx, msgs, func(current string) {
+		_ = p.Stream.NotifyStream(ctx, runID, threadID, current)
+	})
 	if err != nil {
 		_ = p.failRun(ctx, runID, threadID, err)
 		return err
