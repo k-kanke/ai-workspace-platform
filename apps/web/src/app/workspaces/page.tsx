@@ -106,6 +106,7 @@ export default function WorkspacesPage() {
   const [showNewWorkspace, setShowNewWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [newWorkspaceSystemPrompt, setNewWorkspaceSystemPrompt] = useState("");
+  const [newWorkspaceKnowledgeId, setNewWorkspaceKnowledgeId] = useState<number | null>(null);
   const [showNewThread, setShowNewThread] = useState(false);
   const [newThreadWs, setNewThreadWs] = useState<number | null>(null);
   const [newThreadTitle, setNewThreadTitle] = useState("");
@@ -164,6 +165,7 @@ export default function WorkspacesPage() {
     setShowNewWorkspace(false);
     setNewWorkspaceName("");
     setNewWorkspaceSystemPrompt("");
+    setNewWorkspaceKnowledgeId(null);
   }, []);
 
   const closeSystemPromptModal = useCallback(() => {
@@ -334,7 +336,7 @@ export default function WorkspacesPage() {
             expanded={expanded}
             threadsByWs={threadsByWs}
             loadingWs={loadingWs}
-            onNewPane={() => setShowNewWorkspace(true)}
+            onNewPane={() => { setShowNewWorkspace(true); loadKnowledgeList(); }}
             onToggleWs={toggleWs}
             onLoadThreads={loadThreads}
             onOpenThread={openThread}
@@ -466,6 +468,9 @@ export default function WorkspacesPage() {
                   setWorkspaces(prev => [ws, ...prev.filter(w => w.id !== ws.id)]);
                   setThreadsByWs(prev => ({ ...prev, [ws.id]: prev[ws.id] || [] }));
                   setExpanded(prev => new Set(prev).add(ws.id));
+                  if (newWorkspaceKnowledgeId) {
+                    await linkWorkspaceKnowledge(ws.id, newWorkspaceKnowledgeId);
+                  }
                   closeNewWorkspace();
                 } catch {}
               }}
@@ -484,6 +489,17 @@ export default function WorkspacesPage() {
                 value={newWorkspaceSystemPrompt}
                 onChange={(e) => setNewWorkspaceSystemPrompt(e.target.value)}
               />
+              <label className="text-xs text-zinc-600">Knowledge (optional)</label>
+              <select
+                className="border border-zinc-200 rounded-md px-2 py-2 text-sm"
+                value={newWorkspaceKnowledgeId ?? ""}
+                onChange={(e) => setNewWorkspaceKnowledgeId(Number(e.target.value) || null)}
+              >
+                <option value="">No knowledge</option>
+                {knowledgeList.map((k) => (
+                  <option key={k.id} value={k.id}>{k.name}</option>
+                ))}
+              </select>
               <div className="flex justify-end gap-2 pt-2">
                 <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeNewWorkspace}>Cancel</button>
                 <button className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white" type="submit">
