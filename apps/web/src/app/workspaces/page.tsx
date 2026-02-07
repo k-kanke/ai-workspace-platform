@@ -114,6 +114,7 @@ export default function WorkspacesPage() {
   const [knowledgeSelectedId, setKnowledgeSelectedId] = useState<number | null>(null);
   const [knowledgeNameValue, setKnowledgeNameValue] = useState("");
   const [knowledgeEditorValue, setKnowledgeEditorValue] = useState("");
+  const [knowledgeEditMode, setKnowledgeEditMode] = useState(false);
   const [showRenameWorkspaceModal, setShowRenameWorkspaceModal] = useState(false);
   const [renameWorkspaceId, setRenameWorkspaceId] = useState<number | null>(null);
   const [renameWorkspaceValue, setRenameWorkspaceValue] = useState("");
@@ -171,6 +172,7 @@ export default function WorkspacesPage() {
     setKnowledgeSelectedId(null);
     setKnowledgeNameValue("");
     setKnowledgeEditorValue("");
+    setKnowledgeEditMode(false);
   }, []);
 
   const closeRenameWorkspaceModal = useCallback(() => {
@@ -237,6 +239,7 @@ export default function WorkspacesPage() {
     setKnowledgeSelectedId(null);
     setKnowledgeNameValue("");
     setKnowledgeEditorValue("");
+    setKnowledgeEditMode(false);
     setShowKnowledgeModal(true);
     await loadKnowledgeList();
   }, [loadKnowledgeList]);
@@ -245,6 +248,7 @@ export default function WorkspacesPage() {
     setKnowledgeSelectedId(null);
     setKnowledgeNameValue("");
     setKnowledgeEditorValue("");
+    setKnowledgeEditMode(false);
     setShowKnowledgeModal(true);
     await loadKnowledgeList();
   }, [loadKnowledgeList]);
@@ -481,11 +485,11 @@ export default function WorkspacesPage() {
       )}
       {showKnowledgeModal && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50" onClick={closeKnowledgeModal}>
-          <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-3xl p-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-5xl h-[80vh] p-4 pb-16 overflow-hidden flex flex-col relative" onClick={(e) => e.stopPropagation()}>
             <div className="text-sm font-medium mb-3">Knowledge</div>
-            <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-3 gap-4 min-h-72">
-                <div className="col-span-1 border border-zinc-200 rounded-md p-2 overflow-auto">
+            <div className="flex-1 min-h-0">
+              <div className="grid grid-cols-3 gap-4 h-full min-h-0">
+                <div className="col-span-1 border border-zinc-200 rounded-md p-2 overflow-auto h-full min-h-0">
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-xs text-zinc-600">Knowledge List</div>
                     <button
@@ -494,6 +498,7 @@ export default function WorkspacesPage() {
                         setKnowledgeSelectedId(null);
                         setKnowledgeNameValue("");
                         setKnowledgeEditorValue("");
+                        setKnowledgeEditMode(true);
                       }}
                     >
                       + New
@@ -510,10 +515,11 @@ export default function WorkspacesPage() {
                               setKnowledgeSelectedId(k.id);
                               setKnowledgeNameValue(k.name ?? "");
                               setKnowledgeEditorValue(k.content);
+                              setKnowledgeEditMode(false);
                             }}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className="truncate">#{k.id} {k.name}</span>
+                              <span className="truncate">{k.name}</span>
                             </div>
                             <div className="text-[10px] text-zinc-500 truncate">
                               {k.content.slice(0, 30) || "No content"}
@@ -527,51 +533,98 @@ export default function WorkspacesPage() {
                     )}
                   </ul>
                 </div>
-                <div className="col-span-2 flex flex-col gap-2">
-                  <label className="text-xs text-zinc-600">Name</label>
-                  <input
-                    className="border border-zinc-200 rounded-md px-2 py-2 text-sm"
+                <div className="col-span-2 h-full min-h-0">
+                  <div className="flex flex-col gap-2 h-full min-h-0">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-zinc-500">Details</div>
+                      {knowledgeEditMode && (
+                        <div className="text-[11px] px-2 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                          Editing
+                        </div>
+                      )}
+                      <button
+                        className="text-xs px-2 py-1 rounded border border-zinc-200 hover:bg-zinc-50 disabled:opacity-50"
+                        onClick={() => setKnowledgeEditMode(true)}
+                        disabled={!knowledgeSelectedId || knowledgeEditMode}
+                      >
+                        {knowledgeEditMode ? "Editing" : "Edit"}
+                      </button>
+                    </div>
+                    <label className="text-xs text-zinc-600">Name</label>
+                    <input
+                    className="border border-zinc-200 rounded-md px-2 py-2 text-sm disabled:bg-zinc-50"
                     placeholder="Knowledge name"
                     value={knowledgeNameValue}
                     onChange={(e) => setKnowledgeNameValue(e.target.value)}
-                  />
-                  <label className="text-xs text-zinc-600">Content</label>
-                  <textarea
-                    className="border border-zinc-200 rounded-md px-2 py-2 text-sm min-h-48"
+                    disabled={!knowledgeEditMode}
+                    />
+                    <label className="text-xs text-zinc-600">Content</label>
+                    <textarea
+                    className="border border-zinc-200 rounded-md px-2 py-2 text-sm flex-1 min-h-0 disabled:bg-zinc-50"
                     placeholder="Knowledge text"
                     value={knowledgeEditorValue}
                     onChange={(e) => setKnowledgeEditorValue(e.target.value)}
-                  />
-                  <div className="flex justify-between items-center pt-2">
-                    <div className="flex gap-2">
-                      <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeKnowledgeModal}>Close</button>
-                      <button
-                        className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white disabled:opacity-50"
-                        disabled={!(knowledgeNameValue ?? "").trim() || !knowledgeEditorValue.trim()}
-                        onClick={async () => {
-                          const name = (knowledgeNameValue ?? "").trim();
-                          const next = knowledgeEditorValue.trim();
-                          if (!name || !next) return;
-                          try {
-                            if (knowledgeSelectedId) {
-                              const updated = await updateKnowledge(knowledgeSelectedId, name, next);
-                              setKnowledgeList((prev) => prev.map((k) => (k.id === updated.id ? updated : k)));
-                            } else {
-                              const created = await createKnowledge(name, next);
-                              setKnowledgeList((prev) => [created, ...prev]);
-                              setKnowledgeSelectedId(created.id);
-                              setKnowledgeNameValue(created.name);
-                            }
-                          } catch {}
-                        }}
-                      >
-                        Save
-                      </button>
-                    </div>
+                    disabled={!knowledgeEditMode}
+                    />
                   </div>
                 </div>
               </div>
             </div>
+            {!knowledgeEditMode && (
+              <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                <button
+                  className="px-3 py-1.5 text-sm rounded-md border border-zinc-200 bg-white"
+                  type="button"
+                  onClick={closeKnowledgeModal}
+                >
+                  Close
+                </button>
+              </div>
+            )}
+            {knowledgeEditMode && (
+              <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                <button
+                  className="px-3 py-1.5 text-sm rounded-md border border-zinc-200 bg-white"
+                  type="button"
+                  onClick={() => {
+                    if (knowledgeSelectedId) {
+                      const k = knowledgeList.find((x) => x.id === knowledgeSelectedId);
+                      setKnowledgeNameValue(k?.name ?? "");
+                      setKnowledgeEditorValue(k?.content ?? "");
+                    } else {
+                      setKnowledgeNameValue("");
+                      setKnowledgeEditorValue("");
+                    }
+                    setKnowledgeEditMode(false);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white disabled:opacity-50"
+                  disabled={!(knowledgeNameValue ?? "").trim() || !knowledgeEditorValue.trim()}
+                  onClick={async () => {
+                    const name = (knowledgeNameValue ?? "").trim();
+                    const next = knowledgeEditorValue.trim();
+                    if (!name || !next) return;
+                    try {
+                      if (knowledgeSelectedId) {
+                        const updated = await updateKnowledge(knowledgeSelectedId, name, next);
+                        setKnowledgeList((prev) => prev.map((k) => (k.id === updated.id ? updated : k)));
+                      } else {
+                        const created = await createKnowledge(name, next);
+                        setKnowledgeList((prev) => [created, ...prev]);
+                        setKnowledgeSelectedId(created.id);
+                        setKnowledgeNameValue(created.name);
+                      }
+                      setKnowledgeEditMode(false);
+                    } catch {}
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
