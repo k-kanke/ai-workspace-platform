@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   system_prompt TEXT,
+  llm_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
 | id | serial |  | false | PRIMARY KEY | [threads](threads.md), [workspace_knowledge_links](workspace_knowledge_links.md) |  | Workspace ID |
 | name | text |  | false |  |  |  | Workspace name |
 | system_prompt | text |  | true |  |  |  | System prompt |
+| llm_enabled | boolean | true | false | DEFAULT |  |  | LLM enabled |
 | created_at | timestamptz | now() | false | DEFAULT |  |  | Created at |
 
 ## Constraints
@@ -50,6 +52,7 @@ erDiagram
   serial id PK "Workspace ID"
   text name "Workspace name"
   text system_prompt "System prompt"
+  boolean llm_enabled "LLM enabled"
   timestamptz created_at "Created at"
 }
 "threads" {

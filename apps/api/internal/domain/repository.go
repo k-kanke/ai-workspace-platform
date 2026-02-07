@@ -8,6 +8,7 @@ type WorkspaceRepository interface {
 	List(ctx context.Context, limit, offset int) ([]*Workspace, error)
 	UpdateSystemPrompt(ctx context.Context, id int64, systemPrompt *string) (*Workspace, error)
 	UpdateName(ctx context.Context, id int64, name *string) (*Workspace, error)
+	UpdateLLMEnabled(ctx context.Context, id int64, enabled bool) (*Workspace, error)
 	Delete(ctx context.Context, id int64) error
 }
 

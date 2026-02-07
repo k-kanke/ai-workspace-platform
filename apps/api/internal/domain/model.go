@@ -6,6 +6,7 @@ type Workspace struct {
 	ID           int64     `json:"id"`
 	Name         string    `json:"name"`
 	SystemPrompt *string   `json:"system_prompt"`
+	LLMEnabled   bool      `json:"llm_enabled"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 

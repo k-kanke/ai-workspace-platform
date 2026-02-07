@@ -29,6 +29,10 @@ type upsertNameReq struct {
 	Name *string `json:"name"`
 }
 
+type updateLLMEnabledReq struct {
+	LLMEnabled *bool `json:"llm_enabled"`
+}
+
 type knowledgeResp struct {
 	WorkspaceID int64   `json:"workspace_id"`
 	KnowledgeID *int64  `json:"knowledge_id,omitempty"`
@@ -167,4 +171,23 @@ func (h *WorkspaceHandler) Delete(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *WorkspaceHandler) UpdateLLMEnabled(c echo.Context) error {
+	id, err := usecase.ParseID(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid workspace id"})
+	}
+	var req updateLLMEnabledReq
+	if err := c.Bind(&req); err != nil || req.LLMEnabled == nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
+	}
+	w, err := h.U.UpdateWorkspaceLLMEnabled(c.Request().Context(), id, *req.LLMEnabled)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "workspace not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, w)
 }

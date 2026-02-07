@@ -17,6 +17,8 @@ export default function WorkspacePane({
   onOpenKnowledge,
   onRenameWorkspace,
   onDeleteWorkspace,
+  llmEnabled,
+  onToggleLLM,
 }: {
   initialWorkspaceId?: number;
   initialThreadId?: number;
@@ -28,6 +30,8 @@ export default function WorkspacePane({
   onOpenKnowledge?: (wsId: number) => void;
   onRenameWorkspace?: (wsId: number) => void;
   onDeleteWorkspace?: (wsId: number) => void;
+  llmEnabled?: boolean;
+  onToggleLLM?: (wsId: number, enabled: boolean) => void;
 }) {
   const [workspaceId, setWorkspaceId] = useState<number | null>(initialWorkspaceId ?? null);
   const [threadId, setThreadId] = useState<number | null>(initialThreadId ?? null);
@@ -182,9 +186,18 @@ export default function WorkspacePane({
         <div className="font-medium">{workspaceName || `Workspace ${workspaceId ?? "-"}`}</div>
         <div className="text-sm text-zinc-500">/ {threadTitle || `Thread ${threadId ?? "-"}`}</div>
         <div className="ml-auto">{statusBadge}</div>
+        <button
+          className={`inline-flex items-center h-5 w-9 rounded-full border transition-colors mr-2 ${llmEnabled ? "bg-emerald-500 border-emerald-600" : "bg-zinc-200 border-zinc-300"}`}
+          onClick={() => { if (workspaceId != null) onToggleLLM?.(workspaceId, !llmEnabled); }}
+          title={llmEnabled ? "LLM On" : "LLM Off"}
+          aria-label={llmEnabled ? "LLM On" : "LLM Off"}
+          type="button"
+        >
+          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${llmEnabled ? "translate-x-4" : "translate-x-1"}`} />
+        </button>
         <div className="relative">
           <button
-            className="ml-0 text-3xl leading-none text-zinc-500 hover:text-zinc-800"
+            className="ml-0 text-4xl leading-none text-zinc-500 hover:text-zinc-800"
             onClick={() => setSettingsOpen((v) => !v)}
             title="Settings"
             aria-label="Settings"

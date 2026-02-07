@@ -1,6 +1,6 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
-export type Workspace = { id: number; name: string | null; system_prompt?: string | null; created_at?: string };
+export type Workspace = { id: number; name: string | null; system_prompt?: string | null; llm_enabled?: boolean; created_at?: string };
 export type Thread = { id: number; workspace_id: number; title?: string | null; created_at?: string };
 export type Message = { id: number; thread_id: number; role: "user" | "assistant"; content: string; created_at: string };
 export type RunStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
@@ -50,6 +50,13 @@ export async function updateWorkspaceSystemPrompt(workspaceId: number, systemPro
   return http<Workspace>(`/workspaces/${workspaceId}/system_prompt`, {
     method: "PUT",
     body: JSON.stringify({ system_prompt: systemPrompt ?? null }),
+  });
+}
+
+export async function updateWorkspaceLLMEnabled(workspaceId: number, enabled: boolean): Promise<Workspace> {
+  return http<Workspace>(`/workspaces/${workspaceId}/llm_enabled`, {
+    method: "PUT",
+    body: JSON.stringify({ llm_enabled: enabled }),
   });
 }
 

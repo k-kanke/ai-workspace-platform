@@ -15,6 +15,7 @@ import {
   listWorkspaces,
   updateKnowledge,
   updateThreadTitle,
+  updateWorkspaceLLMEnabled,
   updateWorkspaceName,
   updateWorkspaceSystemPrompt,
   Workspace,
@@ -208,6 +209,13 @@ export default function WorkspacesPage() {
     setDeleteThreadWsId(null);
   }, []);
 
+  const toggleWorkspaceLLM = useCallback(async (wsId: number, enabled: boolean) => {
+    try {
+      const ws = await updateWorkspaceLLMEnabled(wsId, enabled);
+      setWorkspaces((prev) => prev.map((w) => (w.id === ws.id ? { ...w, llm_enabled: ws.llm_enabled } : w)));
+    } catch {}
+  }, []);
+
   const loadThreads = useCallback(async (wsId: number) => {
     setLoadingWs(prev => new Set(prev).add(wsId));
     try {
@@ -397,6 +405,8 @@ export default function WorkspacesPage() {
                     onOpenKnowledge={openWorkspaceKnowledge}
                     onRenameWorkspace={openRenameWorkspace}
                     onDeleteWorkspace={openDeleteWorkspace}
+                    llmEnabled={workspaces.find((w) => w.id === p.workspaceId)?.llm_enabled ?? true}
+                    onToggleLLM={toggleWorkspaceLLM}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center text-zinc-400 text-sm">Empty</div>

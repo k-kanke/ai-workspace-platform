@@ -128,6 +128,10 @@ func (u *Usecase) UpdateWorkspaceName(ctx context.Context, workspaceID int64, na
 	return u.Workspace.UpdateName(ctx, workspaceID, normalized)
 }
 
+func (u *Usecase) UpdateWorkspaceLLMEnabled(ctx context.Context, workspaceID int64, enabled bool) (*domain.Workspace, error) {
+	return u.Workspace.UpdateLLMEnabled(ctx, workspaceID, enabled)
+}
+
 func (u *Usecase) DeleteWorkspace(ctx context.Context, workspaceID int64) error {
 	return u.Workspace.Delete(ctx, workspaceID)
 }

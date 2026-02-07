@@ -47,6 +47,18 @@ func (p *RunProcessor) ProcessRun(ctx context.Context, runID, threadID int64) er
 		_ = p.failRun(ctx, runID, threadID, err)
 		return err
 	}
+	if !ctxInfo.LLMEnabled {
+		reply := "LLM is disabled for this workspace."
+		_, err = p.Runs.UpdateStatusCAS(ctx, runID, threadID, repo.RunRunning, repo.RunSucceeded)
+		if err != nil {
+			return err
+		}
+		if err := p.Messages.Create(ctx, threadID, &runID, "assistant", reply); err != nil {
+			log.Printf("insert assistant message failed: %v", err)
+		}
+		log.Printf("run %d completed: llm disabled", runID)
+		return nil
+	}
 
 	history, err := p.Messages.ListByThread(ctx, threadID, 4)
 	if err != nil {

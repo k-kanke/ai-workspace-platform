@@ -57,6 +57,7 @@ erDiagram
   serial id PK "Workspace ID"
   text name "Workspace name"
   text system_prompt "System prompt"
+  boolean llm_enabled "LLM enabled"
   timestamptz created_at "Created at"
 }
 "knowledge" {

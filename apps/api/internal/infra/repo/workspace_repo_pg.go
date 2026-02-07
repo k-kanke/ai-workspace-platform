@@ -15,9 +15,9 @@ func NewWorkspaceRepoPG(db *pgxpool.Pool) *WorkspaceRepoPG { return &WorkspaceRe
 func (r *WorkspaceRepoPG) Create(ctx context.Context, name *string, systemPrompt *string) (*domain.Workspace, error) {
 	var w domain.Workspace
 	err := r.DB.QueryRow(ctx,
-		`INSERT INTO workspaces (name, system_prompt) VALUES ($1, $2) RETURNING id, name, system_prompt, created_at`,
+		`INSERT INTO workspaces (name, system_prompt) VALUES ($1, $2) RETURNING id, name, system_prompt, llm_enabled, created_at`,
 		name, systemPrompt,
-	).Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.CreatedAt)
+	).Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.LLMEnabled, &w.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -27,8 +27,8 @@ func (r *WorkspaceRepoPG) Create(ctx context.Context, name *string, systemPrompt
 func (r *WorkspaceRepoPG) Get(ctx context.Context, id int64) (*domain.Workspace, error) {
 	var w domain.Workspace
 	err := r.DB.QueryRow(ctx,
-		`SELECT id, name, system_prompt, created_at FROM workspaces WHERE id=$1`, id,
-	).Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.CreatedAt)
+		`SELECT id, name, system_prompt, llm_enabled, created_at FROM workspaces WHERE id=$1`, id,
+	).Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.LLMEnabled, &w.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (r *WorkspaceRepoPG) List(ctx context.Context, limit, offset int) ([]*domai
 		offset = 0
 	}
 	rows, err := r.DB.Query(ctx,
-		`SELECT id, name, system_prompt, created_at FROM workspaces ORDER BY id DESC LIMIT $1 OFFSET $2`, limit, offset,
+		`SELECT id, name, system_prompt, llm_enabled, created_at FROM workspaces ORDER BY id DESC LIMIT $1 OFFSET $2`, limit, offset,
 	)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (r *WorkspaceRepoPG) List(ctx context.Context, limit, offset int) ([]*domai
 	out := make([]*domain.Workspace, 0, limit)
 	for rows.Next() {
 		var w domain.Workspace
-		if err := rows.Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.CreatedAt); err != nil {
+		if err := rows.Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.LLMEnabled, &w.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, &w)
@@ -63,9 +63,9 @@ func (r *WorkspaceRepoPG) List(ctx context.Context, limit, offset int) ([]*domai
 func (r *WorkspaceRepoPG) UpdateSystemPrompt(ctx context.Context, id int64, systemPrompt *string) (*domain.Workspace, error) {
 	var w domain.Workspace
 	err := r.DB.QueryRow(ctx,
-		`UPDATE workspaces SET system_prompt=$2 WHERE id=$1 RETURNING id, name, system_prompt, created_at`,
+		`UPDATE workspaces SET system_prompt=$2 WHERE id=$1 RETURNING id, name, system_prompt, llm_enabled, created_at`,
 		id, systemPrompt,
-	).Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.CreatedAt)
+	).Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.LLMEnabled, &w.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -75,9 +75,21 @@ func (r *WorkspaceRepoPG) UpdateSystemPrompt(ctx context.Context, id int64, syst
 func (r *WorkspaceRepoPG) UpdateName(ctx context.Context, id int64, name *string) (*domain.Workspace, error) {
 	var w domain.Workspace
 	err := r.DB.QueryRow(ctx,
-		`UPDATE workspaces SET name=$2 WHERE id=$1 RETURNING id, name, system_prompt, created_at`,
+		`UPDATE workspaces SET name=$2 WHERE id=$1 RETURNING id, name, system_prompt, llm_enabled, created_at`,
 		id, name,
-	).Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.CreatedAt)
+	).Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.LLMEnabled, &w.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &w, nil
+}
+
+func (r *WorkspaceRepoPG) UpdateLLMEnabled(ctx context.Context, id int64, enabled bool) (*domain.Workspace, error) {
+	var w domain.Workspace
+	err := r.DB.QueryRow(ctx,
+		`UPDATE workspaces SET llm_enabled=$2 WHERE id=$1 RETURNING id, name, system_prompt, llm_enabled, created_at`,
+		id, enabled,
+	).Scan(&w.ID, &w.Name, &w.SystemPrompt, &w.LLMEnabled, &w.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
