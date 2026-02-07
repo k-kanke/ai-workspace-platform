@@ -47,6 +47,8 @@ services:
       AWS_REGION: us-east-1
       SQS_ENDPOINT_URL: http://localstack:4566
       SQS_QUEUE_NAME: runs.fifo
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
