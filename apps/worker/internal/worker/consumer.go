@@ -33,7 +33,7 @@ func Consume(ctx context.Context, q *queue.SQSClient, r Runner) error {
 		return ErrNoRunner
 	}
 
-	conc := 2
+	conc := 3
 	if v := os.Getenv("WORKER_CONCURRENCY"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			conc = n

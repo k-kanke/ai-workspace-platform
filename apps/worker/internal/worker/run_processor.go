@@ -23,6 +23,7 @@ func NewRunProcessor(r *repo.RunRepoPG, m *repo.MessageRepoPG, c *repo.ContextRe
 }
 
 func (p *RunProcessor) ProcessRun(ctx context.Context, runID, threadID int64) error {
+	log.Printf("run %d started: thread=%d", runID, threadID)
 	ok, err := p.Runs.UpdateStatusCAS(ctx, runID, threadID, repo.RunQueued, repo.RunRunning)
 	if err != nil {
 		return err
