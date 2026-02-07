@@ -61,6 +61,7 @@ erDiagram
 }
 "knowledge" {
   serial id PK "Knowledge ID"
+  text name "Knowledge name"
   text content "Knowledge content"
   timestamptz created_at "Created at"
   timestamptz updated_at "Updated at"

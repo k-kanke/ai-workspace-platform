@@ -8,6 +8,7 @@
 ```sql
 CREATE TABLE IF NOT EXISTS knowledge (
   id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
   content TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS knowledge (
 | Name | Type | Default | Nullable | Extra Definition | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | ---------------- | -------- | ------- | ------- |
 | id | serial |  | false | PRIMARY KEY | [workspace_knowledge_links](workspace_knowledge_links.md) |  | Knowledge ID |
+| name | text |  | false |  |  |  | Knowledge name |
 | content | text |  | false |  |  |  | Knowledge content |
 | created_at | timestamptz | now() | false | DEFAULT |  |  | Created at |
 | updated_at | timestamptz | now() | false | DEFAULT |  |  | Updated at |
@@ -46,6 +48,7 @@ erDiagram
 
 "knowledge" {
   serial id PK "Knowledge ID"
+  text name "Knowledge name"
   text content "Knowledge content"
   timestamptz created_at "Created at"
   timestamptz updated_at "Updated at"

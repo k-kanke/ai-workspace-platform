@@ -28,6 +28,7 @@ type Usecase struct {
 var ErrInvalidName = errors.New("invalid name")
 var ErrInvalidTitle = errors.New("invalid title")
 var ErrInvalidContent = errors.New("invalid content")
+var ErrInvalidKnowledgeName = errors.New("invalid knowledge name")
 
 func New(db *pgxpool.Pool, pub queue.Publisher) *Usecase {
 	return &Usecase{
@@ -87,18 +88,24 @@ func (u *Usecase) ListKnowledge(ctx context.Context, limit, offset int) ([]*doma
 	return u.KBase.List(ctx, limit, offset)
 }
 
-func (u *Usecase) CreateKnowledge(ctx context.Context, content string) (*domain.Knowledge, error) {
+func (u *Usecase) CreateKnowledgeWithName(ctx context.Context, name, content string) (*domain.Knowledge, error) {
+	if strings.TrimSpace(name) == "" {
+		return nil, ErrInvalidKnowledgeName
+	}
 	if strings.TrimSpace(content) == "" {
 		return nil, ErrInvalidContent
 	}
-	return u.KBase.Create(ctx, content)
+	return u.KBase.CreateWithName(ctx, name, content)
 }
 
-func (u *Usecase) UpdateKnowledge(ctx context.Context, knowledgeID int64, content string) (*domain.Knowledge, error) {
+func (u *Usecase) UpdateKnowledge(ctx context.Context, knowledgeID int64, name, content string) (*domain.Knowledge, error) {
+	if strings.TrimSpace(name) == "" {
+		return nil, ErrInvalidKnowledgeName
+	}
 	if strings.TrimSpace(content) == "" {
 		return nil, ErrInvalidContent
 	}
-	return u.KBase.Update(ctx, knowledgeID, content)
+	return u.KBase.Update(ctx, knowledgeID, name, content)
 }
 
 func (u *Usecase) ListWorkspaceKnowledgeLinks(ctx context.Context, workspaceID int64) ([]*domain.Knowledge, error) {

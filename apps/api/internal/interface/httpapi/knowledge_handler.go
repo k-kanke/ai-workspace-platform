@@ -13,6 +13,7 @@ import (
 type KnowledgeHandler struct{ U *usecase.Usecase }
 
 type knowledgeReq struct {
+	Name    string `json:"name"`
 	Content string `json:"content"`
 }
 
@@ -41,8 +42,11 @@ func (h *KnowledgeHandler) Create(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
 	}
-	k, err := h.U.CreateKnowledge(c.Request().Context(), req.Content)
+	k, err := h.U.CreateKnowledgeWithName(c.Request().Context(), req.Name, req.Content)
 	if err != nil {
+		if errors.Is(err, usecase.ErrInvalidKnowledgeName) {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid name"})
+		}
 		if errors.Is(err, usecase.ErrInvalidContent) {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid content"})
 		}
@@ -60,8 +64,11 @@ func (h *KnowledgeHandler) Update(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
 	}
-	k, err := h.U.UpdateKnowledge(c.Request().Context(), id, req.Content)
+	k, err := h.U.UpdateKnowledge(c.Request().Context(), id, req.Name, req.Content)
 	if err != nil {
+		if errors.Is(err, usecase.ErrInvalidKnowledgeName) {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid name"})
+		}
 		if errors.Is(err, usecase.ErrInvalidContent) {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid content"})
 		}

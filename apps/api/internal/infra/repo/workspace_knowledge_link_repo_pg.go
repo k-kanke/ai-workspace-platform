@@ -17,7 +17,7 @@ func NewWorkspaceKnowledgeLinkRepoPG(db *pgxpool.Pool) *WorkspaceKnowledgeLinkRe
 
 func (r *WorkspaceKnowledgeLinkRepoPG) ListByWorkspace(ctx context.Context, workspaceID int64) ([]*domain.Knowledge, error) {
 	rows, err := r.DB.Query(ctx,
-		`SELECT k.id, k.content, k.created_at, k.updated_at
+		`SELECT k.id, k.name, k.content, k.created_at, k.updated_at
          FROM workspace_knowledge_links wkl
          JOIN knowledge k ON k.id = wkl.knowledge_id
          WHERE wkl.workspace_id=$1
@@ -31,7 +31,7 @@ func (r *WorkspaceKnowledgeLinkRepoPG) ListByWorkspace(ctx context.Context, work
 	var out []*domain.Knowledge
 	for rows.Next() {
 		var k domain.Knowledge
-		if err := rows.Scan(&k.ID, &k.Content, &k.CreatedAt, &k.UpdatedAt); err != nil {
+		if err := rows.Scan(&k.ID, &k.Name, &k.Content, &k.CreatedAt, &k.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, &k)

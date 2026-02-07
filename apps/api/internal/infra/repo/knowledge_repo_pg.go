@@ -13,14 +13,14 @@ type KnowledgeRepoPG struct{ DB *pgxpool.Pool }
 
 func NewKnowledgeRepoPG(db *pgxpool.Pool) *KnowledgeRepoPG { return &KnowledgeRepoPG{DB: db} }
 
-func (r *KnowledgeRepoPG) Create(ctx context.Context, content string) (*domain.Knowledge, error) {
+func (r *KnowledgeRepoPG) CreateWithName(ctx context.Context, name, content string) (*domain.Knowledge, error) {
 	var k domain.Knowledge
 	err := r.DB.QueryRow(ctx,
-		`INSERT INTO knowledge (content, created_at, updated_at)
-         VALUES ($1, NOW(), NOW())
-         RETURNING id, content, created_at, updated_at`,
-		content,
-	).Scan(&k.ID, &k.Content, &k.CreatedAt, &k.UpdatedAt)
+		`INSERT INTO knowledge (name, content, created_at, updated_at)
+         VALUES ($1, $2, NOW(), NOW())
+         RETURNING id, name, content, created_at, updated_at`,
+		name, content,
+	).Scan(&k.ID, &k.Name, &k.Content, &k.CreatedAt, &k.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +30,8 @@ func (r *KnowledgeRepoPG) Create(ctx context.Context, content string) (*domain.K
 func (r *KnowledgeRepoPG) Get(ctx context.Context, id int64) (*domain.Knowledge, error) {
 	var k domain.Knowledge
 	err := r.DB.QueryRow(ctx,
-		`SELECT id, content, created_at, updated_at FROM knowledge WHERE id=$1`, id,
-	).Scan(&k.ID, &k.Content, &k.CreatedAt, &k.UpdatedAt)
+		`SELECT id, name, content, created_at, updated_at FROM knowledge WHERE id=$1`, id,
+	).Scan(&k.ID, &k.Name, &k.Content, &k.CreatedAt, &k.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (r *KnowledgeRepoPG) List(ctx context.Context, limit, offset int) ([]*domai
 		offset = 0
 	}
 	rows, err := r.DB.Query(ctx,
-		`SELECT id, content, created_at, updated_at
+		`SELECT id, name, content, created_at, updated_at
          FROM knowledge
          ORDER BY id DESC
          LIMIT $1 OFFSET $2`, limit, offset,
@@ -58,7 +58,7 @@ func (r *KnowledgeRepoPG) List(ctx context.Context, limit, offset int) ([]*domai
 	out := make([]*domain.Knowledge, 0, limit)
 	for rows.Next() {
 		var k domain.Knowledge
-		if err := rows.Scan(&k.ID, &k.Content, &k.CreatedAt, &k.UpdatedAt); err != nil {
+		if err := rows.Scan(&k.ID, &k.Name, &k.Content, &k.CreatedAt, &k.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, &k)
@@ -66,14 +66,14 @@ func (r *KnowledgeRepoPG) List(ctx context.Context, limit, offset int) ([]*domai
 	return out, rows.Err()
 }
 
-func (r *KnowledgeRepoPG) Update(ctx context.Context, id int64, content string) (*domain.Knowledge, error) {
+func (r *KnowledgeRepoPG) Update(ctx context.Context, id int64, name, content string) (*domain.Knowledge, error) {
 	var k domain.Knowledge
 	err := r.DB.QueryRow(ctx,
-		`UPDATE knowledge SET content=$2, updated_at=NOW()
+		`UPDATE knowledge SET name=$2, content=$3, updated_at=NOW()
          WHERE id=$1
-         RETURNING id, content, created_at, updated_at`,
-		id, content,
-	).Scan(&k.ID, &k.Content, &k.CreatedAt, &k.UpdatedAt)
+         RETURNING id, name, content, created_at, updated_at`,
+		id, name, content,
+	).Scan(&k.ID, &k.Name, &k.Content, &k.CreatedAt, &k.UpdatedAt)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, err

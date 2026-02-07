@@ -7,16 +7,13 @@ import {
   createKnowledge,
   deleteWorkspace,
   deleteThread,
-  linkWorkspaceKnowledge,
   listKnowledge,
   listThreadsByWorkspace,
-  listWorkspaceKnowledgeLinks,
   listWorkspaces,
   updateKnowledge,
   updateThreadTitle,
   updateWorkspaceName,
   updateWorkspaceSystemPrompt,
-  unlinkWorkspaceKnowledge,
   Workspace,
   Thread,
   Knowledge,
@@ -85,12 +82,10 @@ export default function WorkspacesPage() {
   const [editingSystemPromptWs, setEditingSystemPromptWs] = useState<number | null>(null);
   const [systemPromptValue, setSystemPromptValue] = useState("");
   const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
-  const [editingKnowledgeWs, setEditingKnowledgeWs] = useState<number | null>(null);
   const [knowledgeList, setKnowledgeList] = useState<Knowledge[]>([]);
   const [knowledgeSelectedId, setKnowledgeSelectedId] = useState<number | null>(null);
+  const [knowledgeNameValue, setKnowledgeNameValue] = useState("");
   const [knowledgeEditorValue, setKnowledgeEditorValue] = useState("");
-  const [knowledgeLinkedIds, setKnowledgeLinkedIds] = useState<Set<number>>(new Set());
-  const [showKnowledgeWorkspaceSelect, setShowKnowledgeWorkspaceSelect] = useState(false);
   const [showRenameWorkspaceModal, setShowRenameWorkspaceModal] = useState(false);
   const [renameWorkspaceId, setRenameWorkspaceId] = useState<number | null>(null);
   const [renameWorkspaceValue, setRenameWorkspaceValue] = useState("");
@@ -144,10 +139,9 @@ export default function WorkspacesPage() {
 
   const closeKnowledgeModal = useCallback(() => {
     setShowKnowledgeModal(false);
-    setEditingKnowledgeWs(null);
     setKnowledgeSelectedId(null);
+    setKnowledgeNameValue("");
     setKnowledgeEditorValue("");
-    setShowKnowledgeWorkspaceSelect(false);
   }, []);
 
   const closeRenameWorkspaceModal = useCallback(() => {
@@ -209,37 +203,21 @@ export default function WorkspacesPage() {
     } catch {}
   }, []);
 
-  const loadKnowledgeLinks = useCallback(async (wsId: number | null) => {
-    if (!wsId) {
-      setKnowledgeLinkedIds(new Set());
-      return;
-    }
-    try {
-      const items = await listWorkspaceKnowledgeLinks(wsId);
-      setKnowledgeLinkedIds(new Set(items.map((k) => k.id)));
-    } catch {}
-  }, []);
-
-  const openKnowledgeModal = useCallback(async (wsId: number) => {
-    setEditingKnowledgeWs(wsId);
+  const openKnowledgeModal = useCallback(async () => {
     setKnowledgeSelectedId(null);
+    setKnowledgeNameValue("");
     setKnowledgeEditorValue("");
-    setShowKnowledgeWorkspaceSelect(false);
     setShowKnowledgeModal(true);
     await loadKnowledgeList();
-    await loadKnowledgeLinks(wsId);
-  }, [loadKnowledgeList, loadKnowledgeLinks]);
+  }, [loadKnowledgeList]);
 
   const openKnowledgeTab = useCallback(async () => {
-    const wsId = workspaces[0]?.id ?? null;
-    setEditingKnowledgeWs(wsId);
     setKnowledgeSelectedId(null);
+    setKnowledgeNameValue("");
     setKnowledgeEditorValue("");
-    setShowKnowledgeWorkspaceSelect(true);
     setShowKnowledgeModal(true);
     await loadKnowledgeList();
-    await loadKnowledgeLinks(wsId);
-  }, [workspaces, loadKnowledgeList, loadKnowledgeLinks]);
+  }, [loadKnowledgeList]);
 
   const openRenameWorkspace = useCallback((wsId: number) => {
     const ws = workspaces.find((w) => w.id === wsId);
@@ -285,7 +263,7 @@ export default function WorkspacesPage() {
             onOpenThread={openThread}
             onCreateThread={openNewThreadModal}
             onEditSystemPrompt={openSystemPromptModal}
-            onEditKnowledge={openKnowledgeModal}
+            onEditKnowledge={() => openKnowledgeModal()}
             onOpenKnowledgeTab={openKnowledgeTab}
             onRenameWorkspace={openRenameWorkspace}
             onRenameThread={openRenameThread}
@@ -439,27 +417,6 @@ export default function WorkspacesPage() {
           <div className="bg-white rounded-lg border border-zinc-200 shadow-lg w-full max-w-3xl p-4" onClick={(e) => e.stopPropagation()}>
             <div className="text-sm font-medium mb-3">Knowledge</div>
             <div className="flex flex-col gap-3">
-              {showKnowledgeWorkspaceSelect && (
-                <>
-                  <label className="text-xs text-zinc-600">Workspace</label>
-                  <select
-                    className="border border-zinc-200 rounded-md px-2 py-2 text-sm"
-                    value={editingKnowledgeWs ?? ""}
-                    onChange={async (e) => {
-                      const wsId = Number(e.target.value) || null;
-                      setEditingKnowledgeWs(wsId);
-                      await loadKnowledgeLinks(wsId);
-                    }}
-                  >
-                    {workspaces.length === 0 && <option value="">No workspace</option>}
-                    {workspaces.map((ws) => (
-                      <option key={ws.id} value={ws.id}>
-                        {ws.name || `Workspace ${ws.id}`}
-                      </option>
-                    ))}
-                  </select>
-                </>
-              )}
               <div className="grid grid-cols-3 gap-4 min-h-72">
                 <div className="col-span-1 border border-zinc-200 rounded-md p-2 overflow-auto">
                   <div className="flex items-center justify-between mb-2">
@@ -468,15 +425,15 @@ export default function WorkspacesPage() {
                       className="text-xs px-2 py-1 rounded border border-zinc-200 hover:bg-zinc-50"
                       onClick={() => {
                         setKnowledgeSelectedId(null);
+                        setKnowledgeNameValue("");
                         setKnowledgeEditorValue("");
                       }}
                     >
-                      New
+                      + New
                     </button>
                   </div>
                   <ul className="flex flex-col gap-1">
                     {knowledgeList.map((k) => {
-                      const linked = knowledgeLinkedIds.has(k.id);
                       const active = knowledgeSelectedId === k.id;
                       return (
                         <li key={`k-${k.id}`}>
@@ -484,12 +441,15 @@ export default function WorkspacesPage() {
                             className={`w-full text-left text-xs px-2 py-1 rounded hover:bg-zinc-50 ${active ? "bg-zinc-100" : ""}`}
                             onClick={() => {
                               setKnowledgeSelectedId(k.id);
+                              setKnowledgeNameValue(k.name ?? "");
                               setKnowledgeEditorValue(k.content);
                             }}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className="truncate">#{k.id} {k.content.slice(0, 18) || "Untitled"}</span>
-                              {linked && <span className="text-[10px] text-green-700">linked</span>}
+                              <span className="truncate">#{k.id} {k.name}</span>
+                            </div>
+                            <div className="text-[10px] text-zinc-500 truncate">
+                              {k.content.slice(0, 30) || "No content"}
                             </div>
                           </button>
                         </li>
@@ -501,6 +461,13 @@ export default function WorkspacesPage() {
                   </ul>
                 </div>
                 <div className="col-span-2 flex flex-col gap-2">
+                  <label className="text-xs text-zinc-600">Name</label>
+                  <input
+                    className="border border-zinc-200 rounded-md px-2 py-2 text-sm"
+                    placeholder="Knowledge name"
+                    value={knowledgeNameValue}
+                    onChange={(e) => setKnowledgeNameValue(e.target.value)}
+                  />
                   <label className="text-xs text-zinc-600">Content</label>
                   <textarea
                     className="border border-zinc-200 rounded-md px-2 py-2 text-sm min-h-48"
@@ -510,53 +477,23 @@ export default function WorkspacesPage() {
                   />
                   <div className="flex justify-between items-center pt-2">
                     <div className="flex gap-2">
-                      <button
-                        className="px-3 py-1.5 text-sm rounded-md border border-zinc-200 disabled:opacity-50"
-                        disabled={!editingKnowledgeWs || !knowledgeSelectedId}
-                        onClick={async () => {
-                          if (!editingKnowledgeWs || !knowledgeSelectedId) return;
-                          try {
-                            await linkWorkspaceKnowledge(editingKnowledgeWs, knowledgeSelectedId);
-                            setKnowledgeLinkedIds((prev) => new Set(prev).add(knowledgeSelectedId));
-                          } catch {}
-                        }}
-                      >
-                        Link
-                      </button>
-                      <button
-                        className="px-3 py-1.5 text-sm rounded-md border border-zinc-200 disabled:opacity-50"
-                        disabled={!editingKnowledgeWs || !knowledgeSelectedId}
-                        onClick={async () => {
-                          if (!editingKnowledgeWs || !knowledgeSelectedId) return;
-                          try {
-                            await unlinkWorkspaceKnowledge(editingKnowledgeWs, knowledgeSelectedId);
-                            setKnowledgeLinkedIds((prev) => {
-                              const next = new Set(prev);
-                              next.delete(knowledgeSelectedId);
-                              return next;
-                            });
-                          } catch {}
-                        }}
-                      >
-                        Unlink
-                      </button>
-                    </div>
-                    <div className="flex gap-2">
                       <button className="px-3 py-1.5 text-sm rounded-md border border-zinc-200" type="button" onClick={closeKnowledgeModal}>Close</button>
                       <button
                         className="px-3 py-1.5 text-sm rounded-md bg-zinc-900 text-white disabled:opacity-50"
-                        disabled={!knowledgeEditorValue.trim()}
+                        disabled={!(knowledgeNameValue ?? "").trim() || !knowledgeEditorValue.trim()}
                         onClick={async () => {
+                          const name = (knowledgeNameValue ?? "").trim();
                           const next = knowledgeEditorValue.trim();
-                          if (!next) return;
+                          if (!name || !next) return;
                           try {
                             if (knowledgeSelectedId) {
-                              const updated = await updateKnowledge(knowledgeSelectedId, next);
+                              const updated = await updateKnowledge(knowledgeSelectedId, name, next);
                               setKnowledgeList((prev) => prev.map((k) => (k.id === updated.id ? updated : k)));
                             } else {
-                              const created = await createKnowledge(next);
+                              const created = await createKnowledge(name, next);
                               setKnowledgeList((prev) => [created, ...prev]);
                               setKnowledgeSelectedId(created.id);
+                              setKnowledgeNameValue(created.name);
                             }
                           } catch {}
                         }}

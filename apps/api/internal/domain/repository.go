@@ -17,10 +17,10 @@ type WorkspaceKnowledgeRepository interface {
 }
 
 type KnowledgeRepository interface {
-	Create(ctx context.Context, content string) (*Knowledge, error)
+	CreateWithName(ctx context.Context, name, content string) (*Knowledge, error)
 	Get(ctx context.Context, id int64) (*Knowledge, error)
 	List(ctx context.Context, limit, offset int) ([]*Knowledge, error)
-	Update(ctx context.Context, id int64, content string) (*Knowledge, error)
+	Update(ctx context.Context, id int64, name, content string) (*Knowledge, error)
 }
 
 type WorkspaceKnowledgeLinkRepository interface {

@@ -6,7 +6,7 @@ export type Message = { id: number; thread_id: number; role: "user" | "assistant
 export type RunStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
 export type Run = { id: number; thread_id: number; status: RunStatus; created_at?: string; updated_at?: string };
 export type WorkspaceKnowledge = { workspace_id: number; content: string | null; updated_at: string | null };
-export type Knowledge = { id: number; content: string; created_at?: string; updated_at?: string };
+export type Knowledge = { id: number; name: string; content: string; created_at?: string; updated_at?: string };
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -81,17 +81,17 @@ export async function listKnowledge(limit = 50, offset = 0): Promise<Knowledge[]
   return http<Knowledge[]>(`/knowledge?limit=${limit}&offset=${offset}`);
 }
 
-export async function createKnowledge(content: string): Promise<Knowledge> {
+export async function createKnowledge(name: string, content: string): Promise<Knowledge> {
   return http<Knowledge>(`/knowledge`, {
     method: "POST",
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ name, content }),
   });
 }
 
-export async function updateKnowledge(knowledgeId: number, content: string): Promise<Knowledge> {
+export async function updateKnowledge(knowledgeId: number, name: string, content: string): Promise<Knowledge> {
   return http<Knowledge>(`/knowledge/${knowledgeId}`, {
     method: "PUT",
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ name, content }),
   });
 }
 
