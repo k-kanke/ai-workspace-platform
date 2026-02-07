@@ -9,8 +9,9 @@ export type OpenPane = {
   threadId: number;
   workspaceName?: string | null;
   threadTitle?: string | null;
+  lastActiveAt?: number;
 };
-export type SavedItem = { workspaceId: number; threadId: number; title?: string | null };
+export type TabItem = { workspaceId: number; threadId: number; workspaceName?: string | null; threadTitle?: string | null };
 
 export default function Sidebar({
   panes,
@@ -49,7 +50,6 @@ export default function Sidebar({
   onDeleteWorkspace: (wsId: number) => void;
   onDeleteThread: (wsId: number, thId: number) => void;
 }) {
-  const canOpen = panes.length < 3;
   const handleNew = useCallback(() => { onNewPane(); }, [onNewPane]);
   const [menuOpenWs, setMenuOpenWs] = useState<number | null>(null);
   const [menuOpenThread, setMenuOpenThread] = useState<number | null>(null);
@@ -176,9 +176,9 @@ export default function Sidebar({
                     <li key={`th-${th.id}`} className="relative">
                       <div className="flex items-center gap-2">
                         <button
-                          className={`flex-1 text-left text-xs px-2 py-1 rounded hover:bg-zinc-50 ${canOpen ? '' : 'cursor-not-allowed opacity-60'}`}
-                          onClick={() => { if (canOpen) onOpenThread(ws.id, th.id); }}
-                          title={canOpen ? 'Open thread' : 'Maximum 3 panes open'}
+                          className="flex-1 text-left text-xs px-2 py-1 rounded hover:bg-zinc-50"
+                          onClick={() => { onOpenThread(ws.id, th.id); }}
+                          title="Open thread"
                         >
                           {th.title || `Thread ${th.id}`}
                         </button>

@@ -60,6 +60,15 @@ export default function WorkspacePane({
   }, []);
 
   useEffect(() => {
+    if (initialWorkspaceId != null && initialWorkspaceId !== workspaceId) {
+      setWorkspaceId(initialWorkspaceId);
+    }
+    if (initialThreadId != null && initialThreadId !== threadId) {
+      setThreadId(initialThreadId);
+    }
+  }, [initialWorkspaceId, initialThreadId, workspaceId, threadId]);
+
+  useEffect(() => {
     setWorkspaceName(initialWorkspaceName ?? null);
   }, [initialWorkspaceName]);
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/AppHeader";
-import Sidebar, { OpenPane, SavedItem } from "@/components/Sidebar";
+import Sidebar, { OpenPane, TabItem } from "@/components/Sidebar";
 import {
   createKnowledge,
   deleteWorkspace,
@@ -22,52 +22,80 @@ import WorkspacePane from "@/components/WorkspacePane";
 import { createThread, createWorkspace } from "@/lib/api";
 
 type PaneState = OpenPane;
+type TabState = TabItem;
 
 function useOpenPanes() {
   const [panes, setPanes] = useState<PaneState[]>([]);
-  const [saved, setSaved] = useState<SavedItem[]>([]);
+  const [tabs, setTabs] = useState<TabState[]>([]);
   useEffect(() => {
     try {
       const raw = localStorage.getItem("open_panes");
       if (raw) setPanes(JSON.parse(raw));
-      const rawSaved = localStorage.getItem("saved_threads");
-      if (rawSaved) setSaved(JSON.parse(rawSaved));
+      const rawTabs = localStorage.getItem("open_tabs");
+      if (rawTabs) {
+        setTabs(JSON.parse(rawTabs));
+      } else {
+        const rawSaved = localStorage.getItem("saved_threads");
+        if (rawSaved) setTabs(JSON.parse(rawSaved));
+      }
     } catch {}
   }, []);
   useEffect(() => {
     localStorage.setItem("open_panes", JSON.stringify(panes));
   }, [panes]);
   useEffect(() => {
-    localStorage.setItem("saved_threads", JSON.stringify(saved));
-  }, [saved]);
+    localStorage.setItem("open_tabs", JSON.stringify(tabs));
+  }, [tabs]);
 
-  const addPane = useCallback((wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => {
-    setPanes((prev) => {
-      if (prev.length >= 3) return prev;
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      return [...prev, { id, workspaceId: wsId, threadId: thId, workspaceName: wsName ?? null, threadTitle: thTitle ?? null }];
+  const upsertTab = useCallback((wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => {
+    setTabs((prev) => {
+      const idx = prev.findIndex((t) => t.threadId === thId);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], workspaceId: wsId, workspaceName: wsName ?? null, threadTitle: thTitle ?? null };
+        return next;
+      }
+      return [...prev, { workspaceId: wsId, threadId: thId, workspaceName: wsName ?? null, threadTitle: thTitle ?? null }];
     });
   }, []);
-  const ensureSaved = useCallback((wsId: number, thId: number) => {
-    setSaved((prev) => prev.some(s => s.threadId === thId) ? prev : [...prev, { workspaceId: wsId, threadId: thId }]);
+
+  const openInPane = useCallback((wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => {
+    setPanes((prev) => {
+      const now = Date.now();
+      const existingIdx = prev.findIndex((p) => p.threadId === thId);
+      if (existingIdx >= 0) {
+        const next = [...prev];
+        next[existingIdx] = { ...next[existingIdx], workspaceId: wsId, workspaceName: wsName ?? null, threadTitle: thTitle ?? null, lastActiveAt: now };
+        return next;
+      }
+      if (prev.length < 3) {
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        return [...prev, { id, workspaceId: wsId, threadId: thId, workspaceName: wsName ?? null, threadTitle: thTitle ?? null, lastActiveAt: now }];
+      }
+      let oldestIdx = 0;
+      let oldestTs = prev[0]?.lastActiveAt ?? 0;
+      for (let i = 1; i < prev.length; i++) {
+        const ts = prev[i]?.lastActiveAt ?? 0;
+        if (ts < oldestTs) {
+          oldestTs = ts;
+          oldestIdx = i;
+        }
+      }
+      const next = [...prev];
+      next[oldestIdx] = { ...next[oldestIdx], workspaceId: wsId, threadId: thId, workspaceName: wsName ?? null, threadTitle: thTitle ?? null, lastActiveAt: now };
+      return next;
+    });
   }, []);
   const closePane = useCallback((id: string) => {
     setPanes((prev) => {
-      const closing = prev.find(p => p.id === id);
-      if (closing) {
-        ensureSaved(closing.workspaceId, closing.threadId);
-      }
       return prev.filter(p => p.id !== id);
     });
-  }, [ensureSaved]);
-  const openSaved = useCallback((wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => {
-    addPane(wsId, thId, wsName, thTitle);
-  }, [addPane]);
-  return { panes, saved, setPanes, setSaved, addPane, ensureSaved, closePane, openSaved } as const;
+  }, []);
+  return { panes, setPanes, tabs, setTabs, upsertTab, openInPane, closePane } as const;
 }
 
 export default function WorkspacesPage() {
-  const { panes, setPanes, ensureSaved, closePane, openSaved } = useOpenPanes();
+  const { panes, setPanes, tabs, setTabs, upsertTab, openInPane, closePane } = useOpenPanes();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [threadsByWs, setThreadsByWs] = useState<Record<number, Thread[]>>({});
@@ -108,9 +136,10 @@ export default function WorkspacesPage() {
   const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
 
   const onPaneReady = useCallback((idx: number, wsId: number, thId: number, wsName?: string | null, thTitle?: string | null) => {
-    setPanes((prev) => prev.map((p, i) => i === idx ? { ...p, workspaceId: wsId, threadId: thId, workspaceName: wsName ?? null, threadTitle: thTitle ?? null } : p));
-    ensureSaved(wsId, thId);
-  }, [setPanes, ensureSaved]);
+    const now = Date.now();
+    setPanes((prev) => prev.map((p, i) => i === idx ? { ...p, workspaceId: wsId, threadId: thId, workspaceName: wsName ?? null, threadTitle: thTitle ?? null, lastActiveAt: now } : p));
+    upsertTab(wsId, thId, wsName, thTitle);
+  }, [setPanes, upsertTab]);
 
   const gridCols = useMemo(() => {
     const n = Math.max(1, Math.min(3, panes.length || 3));
@@ -180,8 +209,9 @@ export default function WorkspacesPage() {
   const openThread = useCallback((wsId: number, thId: number) => {
     const wsName = workspaces.find(w => w.id === wsId)?.name ?? null;
     const thTitle = (threadsByWs[wsId] || []).find(t => t.id === thId)?.title ?? null;
-    openSaved(wsId, thId, wsName, thTitle);
-  }, [openSaved, threadsByWs, workspaces]);
+    upsertTab(wsId, thId, wsName, thTitle);
+    openInPane(wsId, thId, wsName, thTitle);
+  }, [openInPane, upsertTab, threadsByWs, workspaces]);
 
   const openNewThreadModal = useCallback((wsId: number) => {
     setNewThreadWs(wsId);
@@ -244,6 +274,11 @@ export default function WorkspacesPage() {
     setDeleteThreadId(thId);
     setShowDeleteThreadModal(true);
   }, []);
+
+  const closeTab = useCallback((threadId: number) => {
+    setTabs((prev) => prev.filter((t) => t.threadId !== threadId));
+    setPanes((prev) => prev.filter((p) => p.threadId !== threadId));
+  }, [setTabs, setPanes]);
   // Do not auto-open a workspace on load; user explicitly opens via sidebar
 
   return (
@@ -271,10 +306,40 @@ export default function WorkspacesPage() {
             onDeleteThread={openDeleteThread}
           />
         )}
-        <main className="flex-1 py-3 h-full overflow-hidden">
-          <div className={`grid gap-4 ${gridCols} h-full`}>
+        <main className="flex-1 py-3 h-full overflow-hidden flex flex-col min-h-0">
+          {tabs.length > 0 && (
+            <div className="mb-2 flex gap-2 overflow-x-auto">
+              {tabs.map((t) => {
+                const isOpen = panes.some((p) => p.threadId === t.threadId);
+                const title = t.threadTitle || `Thread ${t.threadId}`;
+                return (
+                  <div
+                    key={`tab-${t.threadId}`}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs cursor-pointer ${
+                      isOpen ? "border-zinc-800 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                    }`}
+                    title={`${t.workspaceName || `Workspace ${t.workspaceId}`} / ${title}`}
+                    onClick={() => openInPane(t.workspaceId, t.threadId, t.workspaceName, t.threadTitle)}
+                  >
+                    <span className="truncate max-w-48">{title}</span>
+                    <button
+                      className={`text-[11px] ${isOpen ? "text-white/80 hover:text-white" : "text-zinc-400 hover:text-zinc-700"}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeTab(t.threadId);
+                      }}
+                      aria-label="Close tab"
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className={`grid gap-4 ${gridCols} flex-1 min-h-0`}>
             {(panes.length ? panes : [null, null, null]).slice(0, 3).map((p, idx) => (
-              <div key={p ? p.id : `placeholder-${idx}`} className="border border-zinc-200 rounded-lg bg-white h-full overflow-hidden shadow-sm">
+              <div key={p ? `${p.id}-${p.threadId}` : `placeholder-${idx}`} className="border border-zinc-200 rounded-lg bg-white h-full overflow-hidden shadow-sm min-h-0">
                 {p ? (
                   <WorkspacePane
                     initialWorkspaceId={p.workspaceId}
@@ -327,7 +392,8 @@ export default function WorkspacesPage() {
                       setThreadsByWs(prev => ({ ...prev, [newThreadWs]: [th, ...(prev[newThreadWs] || [])] }));
                       setExpanded(prev => new Set(prev).add(newThreadWs));
                       const wsName = workspaces.find(w => w.id === newThreadWs)?.name ?? null;
-                      openSaved(newThreadWs, th.id, wsName, th.title ?? null);
+                      upsertTab(newThreadWs, th.id, wsName, th.title ?? null);
+                      openInPane(newThreadWs, th.id, wsName, th.title ?? null);
                       setShowNewThread(false);
                       setNewThreadTitle('');
                     } catch {}
@@ -523,6 +589,7 @@ export default function WorkspacesPage() {
                   const ws = await updateWorkspaceName(renameWorkspaceId, next);
                   setWorkspaces((prev) => prev.map((w) => (w.id === ws.id ? { ...w, name: ws.name ?? null } : w)));
                   setPanes((prev) => prev.map((p) => (p.workspaceId === ws.id ? { ...p, workspaceName: ws.name ?? null } : p)));
+                  setTabs((prev) => prev.map((t) => (t.workspaceId === ws.id ? { ...t, workspaceName: ws.name ?? null } : t)));
                   closeRenameWorkspaceModal();
                 } catch {}
               }}
@@ -562,6 +629,7 @@ export default function WorkspacesPage() {
                     [renameThreadWsId]: (prev[renameThreadWsId] || []).map((t) => (t.id === th.id ? { ...t, title: th.title ?? null } : t)),
                   }));
                   setPanes((prev) => prev.map((p) => (p.threadId === th.id ? { ...p, threadTitle: th.title ?? null } : p)));
+                  setTabs((prev) => prev.map((t) => (t.threadId === th.id ? { ...t, threadTitle: th.title ?? null } : t)));
                   closeRenameThreadModal();
                 } catch {}
               }}
@@ -602,6 +670,7 @@ export default function WorkspacesPage() {
                   const prevThreadsByWs = threadsByWs;
                   const prevExpanded = expanded;
                   const prevPanes = panes;
+                  const prevTabs = tabs;
                   closeDeleteWorkspaceModal();
                   setWorkspaces((prev) => prev.filter((w) => w.id !== wsId));
                   setThreadsByWs((prev) => {
@@ -615,6 +684,7 @@ export default function WorkspacesPage() {
                     return next;
                   });
                   setPanes((prev) => prev.filter((p) => p.workspaceId !== wsId));
+                  setTabs((prev) => prev.filter((t) => t.workspaceId !== wsId));
                   try {
                     await deleteWorkspace(wsId);
                   } catch {
@@ -622,6 +692,7 @@ export default function WorkspacesPage() {
                     setThreadsByWs(prevThreadsByWs);
                     setExpanded(prevExpanded);
                     setPanes(prevPanes);
+                    setTabs(prevTabs);
                   }
                 }}
               >
@@ -649,17 +720,20 @@ export default function WorkspacesPage() {
                   const wsId = deleteThreadWsId;
                   const prevThreadsByWs = threadsByWs;
                   const prevPanes = panes;
+                  const prevTabs = tabs;
                   closeDeleteThreadModal();
                   setThreadsByWs((prev) => ({
                     ...prev,
                     [wsId]: (prev[wsId] || []).filter((t) => t.id !== thId),
                   }));
                   setPanes((prev) => prev.filter((p) => p.threadId !== thId));
+                  setTabs((prev) => prev.filter((t) => t.threadId !== thId));
                   try {
                     await deleteThread(thId);
                   } catch {
                     setThreadsByWs(prevThreadsByWs);
                     setPanes(prevPanes);
+                    setTabs(prevTabs);
                   }
                 }}
               >
