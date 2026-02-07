@@ -88,7 +88,7 @@ export default function Sidebar({
                 </button>
                 <div className="flex items-center gap-2">
                   <button
-                    className="text-xs px-2 py-1 rounded border border-zinc-200 hover:bg-zinc-100"
+                    className="text-xs px-2 py-1 rounded hover:bg-zinc-100"
                     aria-haspopup="menu"
                     aria-expanded={menuOpenWs === ws.id}
                     title="Workspace actions"
@@ -180,10 +180,10 @@ export default function Sidebar({
                           onClick={() => { if (canOpen) onOpenThread(ws.id, th.id); }}
                           title={canOpen ? 'Open thread' : 'Maximum 3 panes open'}
                         >
-                          TH {th.id} {th.title ? `- ${th.title}` : ''}
+                          {th.title || `Thread ${th.id}`}
                         </button>
                         <button
-                          className="text-[10px] px-1.5 py-1 rounded border border-zinc-200 hover:bg-zinc-50"
+                          className="text-[10px] px-1.5 py-1 rounded hover:bg-zinc-50"
                           aria-haspopup="menu"
                           aria-expanded={menuOpenThread === th.id}
                           title="Thread actions"
