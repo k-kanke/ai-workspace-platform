@@ -1,7 +1,7 @@
 # DB Schema (MVP)
-[日本語](./README.ja.md) | English
+日本語 | [English](./README.md)
 
-The MVP database consists of the following six tables:
+MVPのDBは以下の6テーブルで構成します。
 
 - [workspaces](workspaces.md)
 - [knowledge](knowledge.md)
@@ -12,12 +12,12 @@ The MVP database consists of the following six tables:
 
 ## Quick Overview
 
-- **workspaces**: Root entity that represents one UI pane (thinking space).
-- **knowledge**: Independent storage entity for knowledge body content.
-- **workspace_knowledge_links**: Many-to-many mapping between workspaces and knowledge.
-- **threads**: Conversation units inside a workspace (tab = thread).
-- **runs**: Execution unit per user input in a thread, with state transitions.
-- **messages**: User/assistant message logs tied to a thread (optionally tied to a run).
+- **workspaces**: UIの1ペイン（思考空間）を表すルート。
+- **knowledge**: ナレッジ本文の実体（独立）。
+- **workspace_knowledge_links**: ワークスペースとナレッジの紐付け（多対多）。
+- **threads**: ワークスペース内の会話単位（タブ＝スレッド）。
+- **runs**: スレッド内でのユーザー入力ごとの実行単位。状態遷移を持つ。
+- **messages**: user/assistant の発言ログ。スレッドに紐付く（任意で run にも紐付く）。
 
 ## Relations
 
@@ -75,7 +75,7 @@ erDiagram
 
 ## Notes
 
-- `runs.status` is `queued / running / succeeded / failed / cancelled`
-- `messages.run_id` is nullable to allow messages not linked to a run
-- Concurrency is managed per thread (serial within the same thread)
-- Future additions may include `agents / knowledge / files`
+- `runs.status` は `queued / running / succeeded / failed / cancelled`
+- `messages.run_id` は Run 未紐付けの履歴がある可能性に備えて nullable
+- 並列度は thread 単位（同一 thread 内は直列）
+- 将来的に `agents / knowledge / files` など追加予定
