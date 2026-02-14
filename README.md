@@ -1,18 +1,19 @@
 # AI Workspace Platform
+[日本語](./README.ja.md) | English
 
-AIとの対話を「ワークスペース」と「スレッド」で管理し、将来的にワークスペース単位のナレッジを活用できるようにした開発中プロダクトです。
+A product in active development that manages AI conversations with workspaces and threads, designed to support workspace-level knowledge usage in future iterations.
 
-## アーキテクチャ
+## Architecture
 
-### 概要
+### Overview
 
-- **Web (`apps/web`)**: Next.js UI。ワークスペース/スレッド操作、メッセージ送信、SSE購読。
-- **API (`apps/api`)**: EchoベースのHTTP API。永続化、Run作成、SSE配信エンドポイント提供。
-- **Worker (`apps/worker`)**: QueueからRunを処理し、assistantメッセージを保存。
-- **DB (PostgreSQL)**: `workspaces`, `threads`, `runs`, `messages`, `workspace_knowledge` を保持。
-- **Queue (SQS想定)**: API->Worker間の非同期実行トリガー。
+- **Web (`apps/web`)**: Next.js UI for workspace/thread operations, message posting, and SSE subscription.
+- **API (`apps/api`)**: Echo-based HTTP API for persistence, run creation, and SSE streaming endpoints.
+- **Worker (`apps/worker`)**: Processes runs from the queue and stores assistant messages.
+- **DB (PostgreSQL)**: Stores `workspaces`, `threads`, `runs`, `messages`, and `workspace_knowledge`.
+- **Queue (SQS assumed)**: Asynchronous trigger from API to Worker.
 
-### アーキテクチャ図
+### Architecture Diagram
 
 ```mermaid
 flowchart LR
@@ -24,7 +25,7 @@ flowchart LR
     D[(PostgreSQL)]
     S[SSE Stream /runs/:id/stream]
 
-    U -->|操作/入力| W
+    U -->|interaction/input| W
     W -->|HTTP| A
     A -->|read/write| D
     A -->|publish run_queued| Q
@@ -35,17 +36,17 @@ flowchart LR
     A --> S
 ```
 
-### 主要データモデル
+### Core Data Models
 
-- **Workspace**: 会話の論理的な箱。`system_prompt` を持てる。
-- **Thread**: Workspace内の会話単位。
-- **Run**: 1回の実行単位（`queued/running/succeeded/failed/cancelled`）。
-- **Message**: user/assistant発言ログ。
-- **WorkspaceKnowledge**: ワークスペースごとのナレッジ（MVPは1:1）。
+- **Workspace**: Logical container for conversations. Can have a `system_prompt`.
+- **Thread**: A conversation unit inside a workspace.
+- **Run**: One execution unit (`queued/running/succeeded/failed/cancelled`).
+- **Message**: User/assistant message log.
+- **WorkspaceKnowledge**: Workspace-scoped knowledge (MVP is 1:1).
 
-### 実行フロー（メッセージ送信）
+### Execution Flow (Message Posting)
 
-1. Webが `POST /threads/:id/messages` を実行
-2. APIがuser message保存 + run作成（queued） + queue publish
-3. Workerがrunを処理し、assistant message保存 + run更新
-4. APIのSSE (`/runs/:id/stream`) をWebが購読し、結果を反映
+1. Web calls `POST /threads/:id/messages`
+2. API saves the user message + creates a run (`queued`) + publishes to queue
+3. Worker processes the run, saves assistant message, and updates run status
+4. Web subscribes to API SSE (`/runs/:id/stream`) and reflects updates
