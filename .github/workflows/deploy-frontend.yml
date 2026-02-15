@@ -1,1 +1,2 @@
 name: '[PRD]Deploy Frontend'
+on: production
