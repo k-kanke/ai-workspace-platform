@@ -1,2 +1,2 @@
-name: '[PRD]Deploy Frontend'
+name: 'Deploy Frontend'
 on: production
