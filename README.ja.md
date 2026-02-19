@@ -13,7 +13,7 @@ AIとの対話を「ワークスペース」と「スレッド」で管理し、
 - **DB (PostgreSQL)**: `workspaces`, `threads`, `runs`, `messages`, `workspace_knowledge` を保持。
 - **Queue (SQS想定)**: API->Worker間の非同期実行トリガー。
 
-### アーキテクチャ図
+### アーキテクチャ
 
 ```mermaid
 flowchart LR
